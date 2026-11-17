@@ -5560,7 +5560,7 @@ function confirmarCancelamento(){
     var d=rs.data(); if(d.status==='Cancelado') throw new Error('JA_CANCELADA');
     var log=(d.log||[]).concat([{data:new Date().toISOString().split('T')[0],acao:'Cancelado',usuario:S.loggedClient?S.loggedClient.nome:'Cliente',detalhe:motivo}]);
     tx.update(rRef,{status:'Cancelado',motivoCancelamento:motivo,log:log});
-    if(es.exists) tx.update(eRef,{reservados:Math.max(0,(es.data().reservados||0)-(d.qtd||1))});
+    if(es.exists) tx.update(eRef,{reservados:Math.max(0,(es.data().reservados||0)-(d.qtd||1)), ultimaReserva:r.id});
     return log;
   }).then(function(){
     r.motivoCancelamento=motivo; r.status='Cancelado';
@@ -7471,7 +7471,7 @@ async function sincEstoqueTotais(){
   S.eventos.forEach(function(ev){ (ev.hoteis||[]).forEach(function(eh){
     var h = getHotel(eh.hid); var pol = (h&&h.pol)||{};
     (eh.quartos||[]).forEach(function(q){
-      want[estoqueKey(ev.id,eh.hid,q.tipo)] = {total:q.disp||0, preco:q.preco||0, polTipo:pol.tipo||'moderada', polPrazo:pol.prazo||0, eventoId:ev.id, hid:eh.hid, tipo:q.tipo};
+      want[estoqueKey(ev.id,eh.hid,q.tipo)] = {total:q.disp||0, preco:q.preco||0, polTipo:pol.tipo||'moderada', polPrazo:pol.prazo||0, eventoId:ev.id, hid:eh.hid, tipo:q.tipo, evFim:ev.fim||''};
     });
   }); });
   for(var k in want){
@@ -7560,7 +7560,7 @@ async function reservarTransacao(objs){
     objs.forEach(function(o,i){ out.push('FC-'+String(n+i+1).padStart(5,'0')); });
     objs.forEach(function(o,i){ o.id=out[i]; o.uid=uid; o.estoqueKey=chave; o.lote=objs.length>1?out[0]:null; tx.set(db.collection('reservas').doc(o.id), _clean(o)); });
     tx.set(cRef,{n:n+objs.length});
-    tx.update(eRef,{reservados:res+objs.length});
+    tx.update(eRef,{reservados:res+objs.length, ultimaReserva:out[out.length-1]});
     return out;
   });
   objs.forEach(function(o){ S.reservas.push(o); _savedR[o.id]=JSON.stringify(o); });
