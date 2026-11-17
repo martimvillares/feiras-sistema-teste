@@ -7743,7 +7743,7 @@ function aplicarPatches(){
   }
 
   // Só agora o Firebase carregou — verificar URL
-  if(!checkUrl()) showView('v-login');
+  showView('v-login'); /* admin.html: sempre abre no login */
 
   if(loginView) loginView.style.opacity='1';
   aplicarPatches();
