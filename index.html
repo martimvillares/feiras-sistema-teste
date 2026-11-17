@@ -3179,6 +3179,7 @@ function renderReservasAdm(){
         ${r.status==='Aguardando pagamento'?`<button class="btn-sm btn-sm-green" onclick="admConfirmComEmail('${r.id}')">Confirmar</button>`:''}
         ${r.status!=='Cancelado'?`<button class="btn-sm btn-sm-blue" onclick="admOpenAlter('${r.id}')">Alterar</button>`:''}
         <button class="btn-sm" style="background:var(--g100);color:var(--g600);border:none" onclick="admVerDetalhes('${r.id}')">Detalhes</button>
+        <button class="btn-sm" style="background:var(--g100);color:var(--g600);border:none" onclick="openVoucher('${r.id}')">&#128196; Voucher</button>
         <button class="btn-sm" style="background:${r.numHotel?'var(--green-l)':'var(--orange-l)'};color:${r.numHotel?'var(--green)':'#b45309'};border:none" onclick="abrirNumHotel('${r.id}')" title="${r.numHotel?'Conf. hotel: '+r.numHotel:'Aguardando confirmação do hotel'}">&#127970; ${r.numHotel?'Conf.':'Pendente'}</button>
         <button class="btn-sm" style="background:var(--gold-l);color:#b45309;border:none" onclick="abrirFinanceiro('${r.id}')">&#128176;</button>
         <button class="btn-sm" style="background:var(--gold-l);color:var(--gold);border:none" title="Preview e-mail" onclick="abrirPreviewEmail('${r.id}','${r.status==='Cancelado'?'cancelamento':'confirmacao'}')">&#9993;</button>
@@ -5146,7 +5147,7 @@ function openVoucher(id){
       <div class="v-row"><span class="lbl">Pagamento</span><span class="val">${r.pagamento}</span></div>
       ${r.log&&r.log.length>1?`<div style="margin-top:16px;padding-top:12px;border-top:1px dashed var(--g300)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-bottom:8px">Histórico</div>${r.log.map(function(l){return '<div style="display:flex;gap:8px;font-size:11px;margin-bottom:4px;color:var(--g600)"><span style="color:var(--g400);white-space:nowrap">'+l.data+(l.hora?' '+l.hora:'')+'</span><span style="font-weight:700;color:var(--bb)">'+l.acao+'</span><span>'+l.detalhe+'</span><span style="color:var(--g400)">por '+l.usuario+'</span></div>';}).join('')}</div>`:''}
       <div class="voucher-footer">
-        Feiras &amp; Congressos &bull; contato@feirasecongressos.com.br<br>
+        ${(()=>{const a=(S.config&&S.config.agencia)||{};return (a.nome||'Feiras &amp; Congressos')+(a.email?' &bull; '+a.email:'')+(a.telefone?' &bull; '+a.telefone:'')+(a.wpp?' &bull; WhatsApp '+a.wpp.replace(/^55(\d\d)(\d{5})(\d{4})$/,'($1) $2-$3'):'')+(a.wppPlantao?'<br>Plantão emergencial (apenas urgências, final '+String(a.wppPlantao).slice(-4)+'): '+a.wppPlantao.replace(/^55(\d\d)(\d{5})(\d{4})$/,'($1) $2-$3'):'');})()}<br>
         Este voucher é válido como comprovante de reserva junto ao hotel.
       </div>
     </div>`;
