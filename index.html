@@ -1875,6 +1875,8 @@ const S = {
   hoteis: [],
   clientes: [],
   reservas: [],
+  estoque: {},
+  papel: null,
   currentEvento: null,
   selectedQ: null,
   checkoutRes: null,
@@ -1962,7 +1964,17 @@ const days=(a,b)=>Math.max(1,Math.round((new Date(b)-new Date(a))/86400000));
 const slug=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const getHotel=id=>S.hoteis.find(h=>h.id===id);
 const getEvento=id=>S.eventos.find(e=>e.id===id);
-const genResId=()=>'FC-'+String(S.reservas.length+1).padStart(5,'0');
+// Estoque e numeração (Fase 2)
+function _slug(s){ return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+function estoqueKey(ev,hid,tipo){ return _slug(ev)+'__'+_slug(hid)+'__'+_slug(tipo); }
+function _idNum(id){ var m=/^FC-(\d+)$/.exec(id||''); return m?parseInt(m[1],10):0; }
+function reservadosQ(ev,hid,tipo){
+  var e=(S.estoque||{})[estoqueKey(ev,hid,tipo)];
+  if(e && typeof e.reservados==='number') return e.reservados;
+  return S.reservas.filter(function(r){return r.eventoId===ev&&r.hid===hid&&r.quarto===tipo&&r.status!=='Cancelado';}).reduce(function(a,r){return a+(r.qtd||1);},0);
+}
+// Número da reserva para a EQUIPE (o cliente usa o contador do servidor, dentro da transação)
+const genResId=()=>{ var mx=window._contadorN||0; S.reservas.forEach(function(r){ mx=Math.max(mx,_idNum(r.id)); }); return 'FC-'+String(mx+1).padStart(5,'0'); };
 const genGrpId=()=>'GRP-'+String(S.grupos.length+1).padStart(5,'0');
 const baseUrl=()=>window.location.href.split('?')[0];
 
@@ -1998,19 +2010,45 @@ function authSemServidor(){ toast('⚠️ Sem conexão com o servidor. Tente nov
 function authEntrar(email,senha){ return firebase.auth().signInWithEmailAndPassword(email,senha); }
 function authCriar(email,senha){ return firebase.auth().createUserWithEmailAndPassword(email,senha); }
 function authRedefinir(email){ return firebase.auth().sendPasswordResetEmail(email); }
-// Carrega os dados que o usuário logado pode ver
-async function posLoginDados(){ if(!db) return; await fbLoad(); fbListen(); }
+// Carrega os dados que o usuário logado pode ver (equipe: tudo; cliente: só os seus)
+var _unsubDocs = [];
+async function carregarDadosPapel(uid, perfilEquipe){
+  if(!db) return;
+  var equipe = !!(perfilEquipe && perfilEquipe.ativo !== false);
+  S.papel = equipe ? 'equipe' : 'cliente';
+  _unsubDocs.forEach(function(u){ try{u();}catch(e){} }); _unsubDocs = [];
+  await fbLoad();
+  function ouvir(q, fn){ _unsubDocs.push(q.onSnapshot(function(s){ if(s.metadata.hasPendingWrites) return; fn(s); }, function(e){ console.warn('listener', e&&e.code); })); }
+  function setReservas(s){ S.reservas = s.docs.map(function(d){ return d.data(); }); _savedR = {}; S.reservas.forEach(function(r){ _savedR[r.id]=JSON.stringify(r); }); }
+  function setClientes(arr){ S.clientes = arr; _savedC = {}; arr.forEach(function(c){ _savedC[c.uid||c.id]=JSON.stringify(c); }); }
+  function refrescar(){
+    if(S.loggedClient){ var c=S.clientes.find(function(x){ return x.id===S.loggedClient.id; }); if(c) S.loggedClient=c; var v=$('v-cliente'); if(v&&v.classList.contains('active')) renderClienteReservas(); }
+    if(S.loggedAdmin){ try{ renderDash(); renderReservasAdm(); renderClientesAdm(); }catch(e){} }
+  }
+  if(equipe){
+    var rs = await db.collection('reservas').get(); setReservas(rs);
+    var cs = await db.collection('clientes').get(); setClientes(cs.docs.map(function(d){ return d.data(); }));
+    ouvir(db.collection('reservas'), function(s){ setReservas(s); refrescar(); });
+    ouvir(db.collection('clientes'), function(s){ setClientes(s.docs.map(function(d){ return d.data(); })); refrescar(); });
+    ouvir(db.collection('contadores').doc('reservas'), function(s){ window._contadorN = s.exists ? (s.data().n||0) : 0; });
+  } else {
+    var rs2 = await db.collection('reservas').where('uid','==',uid).get(); setReservas(rs2);
+    var cd = await db.collection('clientes').doc(uid).get(); setClientes(cd.exists ? [cd.data()] : []);
+    ouvir(db.collection('reservas').where('uid','==',uid), function(s){ setReservas(s); refrescar(); });
+    ouvir(db.collection('clientes').doc(uid), function(s){ setClientes(s.exists ? [s.data()] : []); refrescar(); });
+  }
+  fbListen();
+}
 // Garante o registro do cliente (dados cadastrais, sem senha) ligado ao login
 async function garantirCliente(user, nome, extra){
-  await posLoginDados();
+  var perfil = await carregarPerfilEquipe(user.uid);
+  await carregarDadosPapel(user.uid, perfil);
   var em=(user.email||'').toLowerCase();
   var cli=S.clientes.find(function(c){ return c.uid===user.uid; }) || S.clientes.find(function(c){ return (c.email||'').trim().toLowerCase()===em; });
   if(!cli){
     cli=Object.assign({id:'cli-'+Date.now(),uid:user.uid,nome:nome||em.split('@')[0],email:em,cadastro:new Date().toISOString().split('T')[0],ativo:true}, extra||{});
     S.clientes.push(cli);
-  } else {
-    cli.uid=user.uid; delete cli.senha; delete cli.senhaTemp;
-  }
+  } else { cli.uid=user.uid; delete cli.senha; delete cli.senhaTemp; }
   fbSaveAll && fbSaveAll();
   return cli;
 }
@@ -2085,7 +2123,7 @@ function doLogin(){
         await firebase.auth().signOut();
         toast('⚠️ Este acesso não tem permissão de administrador.'); return;
       }
-      await posLoginDados();
+      await carregarDadosPapel(uid, perfil);
       var u=S.usuarios.find(function(x){ return x.uid===uid; }) || S.usuarios.find(function(x){ return (x.email||'').toLowerCase()===email; });
       if(!u){ u={id:'usr-'+Date.now(),nome:perfil.nome||email,email:email,perfil:perfil.perfil,eventos:perfil.eventos||[],hotelId:perfil.hotelId||null,ativo:true}; S.usuarios.push(u); }
       u.uid=uid; u.perfil=perfil.perfil; u.ativo=true; delete u.senha;
@@ -2182,7 +2220,7 @@ function renderDispDash(){
     sortedHoteis.forEach(function(eh){
       var h = getHotel(eh.hid); if(!h) return;
       eh.quartos.forEach(function(q){
-        var reservadas = S.reservas.filter(r=>r.eventoId===ev.id&&r.hid===eh.hid&&r.quarto===q.tipo&&r.status!=='Cancelado').reduce(function(a,r){return a+(r.qtd||1);},0);
+        var reservadas = reservadosQ(ev.id,eh.hid,q.tipo);
         var total = q.disp||0;
         var disp = Math.max(0, total - reservadas);
         var pct = total>0 ? Math.round(disp/total*100) : 0;
@@ -2803,6 +2841,7 @@ function grpStep5(){
 }
 
 function confirmarGrupoMotor(){
+  if(!S.loggedAdmin){ toast('Reservas de grupo: fale com a agência: (11) 93464-3019.', 5000); return; }
   var ev = S.currentEvento;
   var d  = _grpMotorDados;
   var cl = S.loggedClient;
@@ -4836,7 +4875,7 @@ function renderBkHotels(){
     var nPessoas = maxPessoas; // used for capacity check (most restrictive group)
     var qs = '';
     eh.quartos.forEach(function(q){
-      var reservadas = S.reservas.filter(function(r){ return r.eventoId===ev.id&&r.hid===h.id&&r.quarto===q.tipo&&r.status!=='Cancelado'; }).reduce(function(a,r){ return a+(r.qtd||1); },0);
+      var reservadas = reservadosQ(ev.id,h.id,q.tipo);
       var dispCount = (q.disp||0) - reservadas;
       var esgotado = q.disp!==undefined && dispCount<=0;
       var semDisp = !esgotado && q.disp!==undefined && dispCount < nQuartos;
@@ -5272,20 +5311,17 @@ function finalizarPagamento(){
   }
   // ────────────────────────────────────────────────────────────────
 
-  const ids=[];
+  const objs=[];
   for(let i=0;i<qtd;i++){
-    const id=genResId();
-    ids.push(id);
     var hospedeNome = S.checkoutRes&&S.checkoutRes.hospedes&&S.checkoutRes.hospedes[i]
       ? S.checkoutRes.hospedes[i]
       : (S.checkoutRes?S.checkoutRes.nome||'':'');
-    S.reservas.push({
-      id,clienteId:S.loggedClient.id,clienteNome:S.loggedClient.nome,clienteEmail:S.loggedClient.email,
+    objs.push({
+      clienteId:S.loggedClient.id,clienteNome:S.loggedClient.nome,clienteEmail:S.loggedClient.email,
       hospedeNome: hospedeNome,
       eventoId:ev.id,eventoNome:ev.nome,hid:q.hid,hotel:q.hotel,quarto:q.tipo,alimentacao:q.alimentacao||'sem_refeicao',
       ci,co,noites:q.noites,preco:q.preco,total:q.preco*q.noites,
       qtd:1,pessoas,
-      lote:qtd>1?ids[0]:null,
       obs:S.checkoutRes?S.checkoutRes.obs||'':'',
       cpf:S.checkoutRes?S.checkoutRes.cpf||'':'',
       cnpj:S.checkoutRes?S.checkoutRes.cnpj||'':'',
@@ -5297,6 +5333,16 @@ function finalizarPagamento(){
       log:[{data:new Date().toISOString().split('T')[0],acao:'Criado',usuario:S.loggedClient?S.loggedClient.nome:'Cliente',detalhe:'Reserva criada via site'}],
     });
   }
+  if(!authDisponivel()){ authSemServidor(); return; }
+  toast('Registrando reserva...');
+  reservarTransacao(objs).then(function(ids){ _posReserva(ids,qtd); })
+  .catch(function(e){
+    var m=(e&&e.message)||'';
+    console.warn('reserva', e);
+    toast(m.indexOf('ESGOTADO')>=0?'⚠️ Este quarto acabou de esgotar. Escolha outro tipo ou fale com a agência.':m.indexOf('ESTOQUE')>=0?'⚠️ Quarto indisponível no momento. Fale com a agência: (11) 93464-3019.':'⚠️ Não foi possível registrar a reserva. Tente novamente.',6000);
+  });
+}
+function _posReserva(ids,qtd){
   closeOverlay('bs-checkout');
   if(qtd===1){
     $('suc-code').textContent=ids[0];
@@ -5382,7 +5428,7 @@ function renderClienteReservas(){
         <div class="policy-info"><span class="pi-icon">📋</span><span>${polMsg}</span></div>
         <div class="res-actions">
           <button class="btn btn-ghost" onclick="openVoucher('${r.id}')">📄 Voucher</button>
-          ${canEdit?`<button class="btn btn-ghost" onclick="openAlter('${r.id}')">✏️ Alterar</button>`:''}
+          ${canEdit?`<a class="btn btn-ghost" href="https://wa.me/5511934643019" target="_blank" rel="noopener" style="text-decoration:none">💬 Alterar (falar com a agência)</a>`:''}
           ${canCancel?`<button class="btn btn-red" onclick="openCancel('${r.id}')">✕ Cancelar</button>`:''}
         </div>
       </div>
@@ -5496,14 +5542,38 @@ function openCancel(id){
 function confirmarCancelamento(){
   const r=S.reservas.find(x=>x.id===S.cancelResId);if(!r)return;
   var motCanc = $('cancel-motivo') ? $('cancel-motivo').value.trim() : '';
-  r.motivoCancelamento = motCanc || 'Cancelado pelo cliente';
-  addLogEntry(r.id, 'Cancelado', motCanc || 'Reserva cancelada pelo cliente');
-  r.status='Cancelado';
-  closeOverlay('modal-cancel');renderClienteReservas();
-  if(S.loggedAdmin)renderAll();
-  toast('Reserva cancelada.');
-  // Dispara prévia de e-mail de cancelamento
-  setTimeout(function(){ abrirPreviewEmail(r.id, 'cancelamento'); }, 600);
+  var motivo = motCanc || 'Cancelado pelo cliente';
+  if(S.papel==='equipe' || S.loggedAdmin){
+    r.motivoCancelamento = motivo;
+    addLogEntry(r.id, 'Cancelado', motCanc || 'Reserva cancelada pelo cliente');
+    r.status='Cancelado';
+    closeOverlay('modal-cancel');renderClienteReservas();
+    if(S.loggedAdmin)renderAll();
+    toast('Reserva cancelada.');
+    setTimeout(function(){ abrirPreviewEmail(r.id, 'cancelamento'); }, 600);
+    return;
+  }
+  var rRef=db.collection('reservas').doc(r.id), eRef=db.collection('estoque').doc(r.estoqueKey||estoqueKey(r.eventoId,r.hid,r.quarto));
+  db.runTransaction(async function(tx){
+    var rs=await tx.get(rRef), es=await tx.get(eRef);
+    if(!rs.exists) throw new Error('SEM_RESERVA');
+    var d=rs.data(); if(d.status==='Cancelado') throw new Error('JA_CANCELADA');
+    var log=(d.log||[]).concat([{data:new Date().toISOString().split('T')[0],acao:'Cancelado',usuario:S.loggedClient?S.loggedClient.nome:'Cliente',detalhe:motivo}]);
+    tx.update(rRef,{status:'Cancelado',motivoCancelamento:motivo,log:log});
+    if(es.exists) tx.update(eRef,{reservados:Math.max(0,(es.data().reservados||0)-(d.qtd||1))});
+    return log;
+  }).then(function(){
+    r.motivoCancelamento=motivo; r.status='Cancelado';
+    r.log=(r.log||[]).concat([{data:new Date().toISOString().split('T')[0],acao:'Cancelado',usuario:S.loggedClient?S.loggedClient.nome:'Cliente',detalhe:motivo}]);
+    _savedR[r.id]=JSON.stringify(r);
+    closeOverlay('modal-cancel');renderClienteReservas();
+    toast('Reserva cancelada.');
+    setTimeout(function(){ abrirPreviewEmail(r.id, 'cancelamento'); }, 600);
+  }).catch(function(e){
+    console.warn('cancelar', e);
+    closeOverlay('modal-cancel');
+    toast('⚠️ Esta reserva não pode ser cancelada por aqui (prazo vencido ou hotel sem cancelamento). Fale com a agência: (11) 93464-3019.',6000);
+  });
 }
 
 /* ── VOUCHER ── */
@@ -7316,7 +7386,7 @@ function confirmarCancelamentoAdmin() {
 var db = null;
 var fbSaveAll = null;
 
-const COLECOES = ['reservas','hoteis','eventos','clientes','grupos','usuarios','config'];
+const COLECOES = ['hoteis','eventos','grupos','usuarios','config'];
 var _fbListeners = [];
 var _fbSaveTimer = null;
 
@@ -7383,28 +7453,144 @@ async function fbResetDados(){
 }
 
 var _fbOk = {};
+var _savedR = {}, _savedC = {}, _savedE = {};
+var _syncBusy = false, _syncAgain = false;
+function _clean(o){ return JSON.parse(JSON.stringify(o)); }
+function _ativa(r){ return r && r.status!=='Cancelado'; }
 function _colsGravaveis(){
-  var base = S.loggedAdmin ? COLECOES : ['reservas','clientes','grupos'];
-  return base.filter(function(c){ return _fbOk[c]; });
+  if(!S.loggedAdmin) return [];
+  return COLECOES.filter(function(c){ return _fbOk[c]; });
 }
+function _inc(n){ return firebase.firestore.FieldValue.increment(n); }
+function _keyR(r){ return estoqueKey(r.eventoId,r.hid,r.quarto); }
+
+// Totais e política de cancelamento de cada quarto (a equipe define; o site público só lê)
+async function sincEstoqueTotais(){
+  var want = {};
+  S.eventos.forEach(function(ev){ (ev.hoteis||[]).forEach(function(eh){
+    var h = getHotel(eh.hid); var pol = (h&&h.pol)||{};
+    (eh.quartos||[]).forEach(function(q){
+      want[estoqueKey(ev.id,eh.hid,q.tipo)] = {total:q.disp||0, preco:q.preco||0, polTipo:pol.tipo||'moderada', polPrazo:pol.prazo||0, eventoId:ev.id, hid:eh.hid, tipo:q.tipo};
+    });
+  }); });
+  for(var k in want){
+    var j = JSON.stringify(want[k]);
+    if(_savedE[k]===j) continue;
+    var ref = db.collection('estoque').doc(k);
+    var s = await ref.get();
+    var data = _clean(want[k]);
+    if(!s.exists){
+      data.reservados = S.reservas.filter(function(r){ return _savedR[r.id]!==undefined && _keyR(r)===k && _ativa(r); }).reduce(function(a,r){ return a+(r.qtd||1); },0);
+    }
+    await ref.set(data,{merge:true});
+    _savedE[k] = j;
+  }
+}
+// Recalcula "reservados" de todos os quartos a partir das reservas (conserto manual)
+async function recalcularEstoque(){
+  if(S.papel!=='equipe'){ toast('Somente a equipe.'); return; }
+  var cont = {};
+  S.reservas.forEach(function(r){ if(_ativa(r)){ var k=_keyR(r); cont[k]=(cont[k]||0)+(r.qtd||1); } });
+  for(var k in _savedE){ await db.collection('estoque').doc(k).set({reservados:cont[k]||0},{merge:true}); }
+  toast('Estoque recalculado.');
+}
+async function _criarReservaStaff(r){
+  var cl = S.clientes.find(function(c){ return c.id===r.clienteId; });
+  if(!r.uid && cl && cl.uid) r.uid = cl.uid;
+  r.estoqueKey = _keyR(r);
+  var rRef = db.collection('reservas').doc(r.id), cRef = db.collection('contadores').doc('reservas');
+  await db.runTransaction(async function(tx){
+    var s = await tx.get(rRef); if(s.exists) throw new Error('ID_DUPLICADO:'+r.id);
+    var c = await tx.get(cRef); var n = c.exists ? (c.data().n||0) : 0; var num = _idNum(r.id);
+    tx.set(rRef,_clean(r));
+    if(num>n) tx.set(cRef,{n:num});
+    if(_ativa(r)) tx.set(db.collection('estoque').doc(r.estoqueKey),{reservados:_inc(r.qtd||1)},{merge:true});
+  });
+}
+async function _atualizarReservaStaff(prev, cur){
+  cur.estoqueKey = _keyR(cur);
+  var batch = db.batch();
+  batch.set(db.collection('reservas').doc(cur.id), _clean(cur));
+  var delta = {};
+  var kp = prev.estoqueKey || _keyR(prev);
+  if(_ativa(prev)) delta[kp] = (delta[kp]||0) - (prev.qtd||1);
+  if(_ativa(cur))  delta[cur.estoqueKey] = (delta[cur.estoqueKey]||0) + (cur.qtd||1);
+  for(var k in delta){ if(delta[k]!==0) batch.set(db.collection('estoque').doc(k),{reservados:_inc(delta[k])},{merge:true}); }
+  await batch.commit();
+}
+async function _removerReservaStaff(prev){
+  var batch = db.batch();
+  batch.delete(db.collection('reservas').doc(prev.id));
+  if(_ativa(prev)) batch.set(db.collection('estoque').doc(prev.estoqueKey||_keyR(prev)),{reservados:_inc(-(prev.qtd||1))},{merge:true});
+  await batch.commit();
+}
+async function sincReservasStaff(){
+  var atual = {}; S.reservas.forEach(function(r){ atual[r.id]=r; });
+  for(var id in atual){
+    var j = JSON.stringify(atual[id]), prev = _savedR[id];
+    if(prev===j) continue;
+    if(prev===undefined) await _criarReservaStaff(atual[id]); else await _atualizarReservaStaff(JSON.parse(prev), atual[id]);
+    _savedR[id] = JSON.stringify(atual[id]);
+  }
+  for(var id2 in _savedR){ if(!atual[id2]){ await _removerReservaStaff(JSON.parse(_savedR[id2])); delete _savedR[id2]; } }
+}
+async function sincClientes(){
+  var uidAtual = firebase.auth().currentUser.uid, equipe = S.papel==='equipe';
+  var atual = {}; S.clientes.forEach(function(c){ atual[c.uid||c.id]=c; });
+  for(var id in atual){
+    if(!equipe && id!==uidAtual) continue;
+    var j = JSON.stringify(atual[id]);
+    if(_savedC[id]===j) continue;
+    await db.collection('clientes').doc(id).set(_clean(atual[id]));
+    _savedC[id] = j;
+  }
+  if(equipe){ for(var id2 in _savedC){ if(!atual[id2]){ await db.collection('clientes').doc(id2).delete(); delete _savedC[id2]; } } }
+}
+// Reserva do CLIENTE: número, saldo de quartos e gravação numa única transação
+async function reservarTransacao(objs){
+  var o0 = objs[0], uid = firebase.auth().currentUser.uid, chave = estoqueKey(o0.eventoId,o0.hid,o0.quarto);
+  var cRef = db.collection('contadores').doc('reservas'), eRef = db.collection('estoque').doc(chave);
+  var ids = await db.runTransaction(async function(tx){
+    var cs = await tx.get(cRef), es = await tx.get(eRef);
+    if(!es.exists) throw new Error('ESTOQUE_INEXISTENTE');
+    var ed = es.data(), res = ed.reservados||0;
+    if(res + objs.length > ed.total) throw new Error('ESGOTADO');
+    var n = cs.exists ? (cs.data().n||0) : 0, out = [];
+    objs.forEach(function(o,i){ out.push('FC-'+String(n+i+1).padStart(5,'0')); });
+    objs.forEach(function(o,i){ o.id=out[i]; o.uid=uid; o.estoqueKey=chave; o.lote=objs.length>1?out[0]:null; tx.set(db.collection('reservas').doc(o.id), _clean(o)); });
+    tx.set(cRef,{n:n+objs.length});
+    tx.update(eRef,{reservados:res+objs.length});
+    return out;
+  });
+  objs.forEach(function(o){ S.reservas.push(o); _savedR[o.id]=JSON.stringify(o); });
+  return ids;
+}
+
 fbSaveAll = async function(){
   if(!db){ return; }
   if(!(firebase.auth && firebase.auth().currentUser)){ return; }
   if(_fbSaveTimer) clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(async function(){
+    if(_syncBusy){ _syncAgain = true; return; }
+    _syncBusy = true;
     setSyncStatus('saving');
     try {
-      var batch = db.batch();
       var cols = _colsGravaveis();
-      cols.forEach(function(col){
-        var ref = db.collection('sistema').doc(col);
-        batch.set(ref, { data: JSON.stringify(S[col]), updated: Date.now() });
-      });
-      if(cols.length) await batch.commit();
+      if(cols.length){
+        var batch = db.batch();
+        cols.forEach(function(col){ batch.set(db.collection('sistema').doc(col), { data: JSON.stringify(S[col]), updated: Date.now() }); });
+        await batch.commit();
+      }
+      if(S.papel==='equipe'){ await sincEstoqueTotais(); await sincReservasStaff(); }
+      await sincClientes();
       setSyncStatus('ok');
     } catch(e){
       console.error('fbSaveAll error:', e);
       setSyncStatus('error');
+      if(e && /ID_DUPLICADO/.test(e.message||'')) toast('⚠️ Número de reserva repetido. Recarregue a página e tente de novo.', 6000);
+    } finally {
+      _syncBusy = false;
+      if(_syncAgain){ _syncAgain = false; fbSaveAll(); }
     }
   }, 500);
 };
@@ -7434,6 +7620,11 @@ function fbListen(){
   if(!db) return;
   _fbListeners.forEach(function(u){ try{u();}catch(e){} });
   _fbListeners = [];
+  _fbListeners.push(db.collection('estoque').onSnapshot(function(snap){
+    var m = {}; snap.forEach(function(d){ m[d.id]=d.data(); }); S.estoque = m;
+    var vel = document.getElementById('v-eventos-lista');
+    if(vel && vel.classList.contains('active')) renderEventosLista();
+  }, function(){}));
   COLECOES.forEach(function(col){
     var unsub = db.collection('sistema').doc(col).onSnapshot(function(snap){
       if(snap.exists && snap.data() && snap.data().data){
