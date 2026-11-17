@@ -7214,8 +7214,8 @@ function enviarEmailHotel(resId){
   var cancel = r.status==='Cancelado';
   var html = _emailCorpo(cancel?'Reserva cancelada':'Nova reserva para confirmar',
     cancel?'Informamos o cancelamento da reserva abaixo. Por favor, liberar o quarto.':'Solicitamos a confirmação da reserva abaixo, com o número de confirmação do hotel.',
-    [['Reserva',r.id],['Evento',r.eventoNome],['Hóspede',r.hospedeNome||r.clienteNome],['Responsável',r.clienteNome],['WhatsApp',r.wpp],['Quarto',r.quarto],['Hóspedes',r.pessoas?r.pessoas+' pessoa(s)':''],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Observações',r.obs]],
-    'Responda este e-mail com o número de confirmação.');
+    [['Reserva',r.id],['Evento',r.eventoNome],['Hóspede',r.hospedeNome||r.clienteNome],['Quarto',r.quarto],['Hóspedes',r.pessoas?r.pessoas+' pessoa(s)':''],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Observações',r.obs]],
+    'Responda este e-mail com o número de confirmação do hotel. Contato da agência no rodapé.');
   _enviarGenerico(para, (cancel?'Cancelamento':'Reserva')+' '+r.id+' - '+(r.eventoNome||'')+' - '+(r.hospedeNome||r.clienteNome||''), html, 'E-mail enviado ao hotel');
 }
 // E-mail ao cliente: reserva confirmada, com o caminho do voucher
