@@ -3664,6 +3664,8 @@ function renderReservasAdm(){
         <button class="btn-sm" style="background:var(--gold-l);color:#b45309;border:none" onclick="abrirFinanceiro('${r.id}')">&#128176;</button>
         <button class="btn-sm" style="background:var(--gold-l);color:var(--gold);border:none" title="Preview e-mail" onclick="abrirPreviewEmail('${r.id}','${r.status==='Cancelado'?'cancelamento':'confirmacao'}')">&#9993;</button>
         <button class="btn-sm" style="background:var(--green-l);color:var(--green);border:none" title="Enviar e-mail automaticamente" onclick="enviarEmailAutomatico('${r.id}')">&#9654; E-mail</button>
+        <button class="btn-sm" style="background:var(--g100);color:var(--g600);border:none" title="Enviar pedido/aviso ao hotel" onclick="enviarEmailHotel('${r.id}')">&#127976; Hotel</button>
+        <button class="btn-sm" style="background:var(--green-l);color:var(--green);border:none" title="Enviar e-mail de reserva confirmada ao cliente" onclick="enviarEmailConfirmada('${r.id}')">&#10004; Confirmada</button>
         <button class="btn-sm btn-sm-red" onclick="admCancelComEmail('${r.id}')">Cancelar</button>
         ${r.log&&r.log.length?`<button class="btn-sm" style="background:var(--bl);color:var(--bb);border:none" onclick="verLogReserva('${r.id}')">Log (${r.log.length})</button>`:''}
       </td>
@@ -7177,6 +7179,54 @@ function enviarEmailAutomatico(resId){
     .catch(function(err){ console.error('EmailJS erro:', err); toast('⚠️ Erro ao enviar e-mail automatico', 4000); });
   // PENDENTE: cópia ao hotel desligada até existir modelo próprio para o hotel (EmailJS).
   // Para religar, usar um EMAILJS_TEMPLATE_HOTEL e enviar a cada e-mail de hotel.cadastrado.
+}
+
+// ── E-mails por modelo genérico (EmailJS: assunto, email_destino, corpo_html) ──
+function _escH(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _emailLinhas(rows){
+  return rows.filter(function(x){ return x[1]!==undefined && x[1]!==null && x[1]!==''; }).map(function(x){
+    return '<tr><td style="padding:6px 10px;color:#666;font-size:13px;border-bottom:1px solid #eee">'+_escH(x[0])+'</td><td style="padding:6px 10px;font-size:14px;font-weight:600;border-bottom:1px solid #eee">'+_escH(x[1])+'</td></tr>';
+  }).join('');
+}
+function _emailCorpo(titulo, intro, rows, rodape){
+  var ag = S.config.agencia || {};
+  return '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#222">'
+    +'<div style="background:#0b2a5b;color:#fff;padding:18px 20px;border-radius:8px 8px 0 0"><div style="font-size:12px;opacity:.8">'+_escH(ag.nome||'Feiras & Congressos')+'</div><div style="font-size:20px;font-weight:bold">'+_escH(titulo)+'</div></div>'
+    +'<div style="border:1px solid #e3e3e3;border-top:0;padding:18px 20px;border-radius:0 0 8px 8px">'
+    +'<p style="font-size:14px;line-height:1.5">'+intro+'</p>'
+    +'<table style="width:100%;border-collapse:collapse">'+_emailLinhas(rows)+'</table>'
+    +(rodape?'<p style="font-size:13px;line-height:1.5;margin-top:16px">'+rodape+'</p>':'')
+    +'<p style="font-size:12px;color:#888;margin-top:18px">'+_escH(ag.nome||'Feiras & Congressos')+(ag.telefone?' &bull; '+_escH(ag.telefone):'')+(ag.email?' &bull; '+_escH(ag.email):'')+'</p>'
+    +'</div></div>';
+}
+function _enviarGenerico(para, assunto, html, okMsg){
+  if(!window._emailjsOk){ toast('⚠️ Envio de e-mail indisponível agora.', 4000); return; }
+  if(!para){ toast('⚠️ Destinatário sem e-mail cadastrado.', 4000); return; }
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_SENHA, {email_destino:para, assunto:assunto, corpo_html:html})
+    .then(function(){ toast('✅ '+okMsg, 4000); })
+    .catch(function(err){ console.error('EmailJS erro:', err); toast('⚠️ Erro ao enviar o e-mail', 4000); });
+}
+// E-mail ao hotel: dados operacionais do hóspede, sem CPF e sem valores
+function enviarEmailHotel(resId){
+  var r = S.reservas.find(function(x){ return x.id===resId; }); if(!r) return;
+  var h = getHotel(r.hid);
+  var para = h && h.email ? h.email.split(',').map(function(e){ return e.trim(); }).filter(Boolean).join(',') : '';
+  var cancel = r.status==='Cancelado';
+  var html = _emailCorpo(cancel?'Reserva cancelada':'Nova reserva para confirmar',
+    cancel?'Informamos o cancelamento da reserva abaixo. Por favor, liberar o quarto.':'Solicitamos a confirmação da reserva abaixo, com o número de confirmação do hotel.',
+    [['Reserva',r.id],['Evento',r.eventoNome],['Hóspede',r.hospedeNome||r.clienteNome],['Responsável',r.clienteNome],['WhatsApp',r.wpp],['Quarto',r.quarto],['Hóspedes',r.pessoas?r.pessoas+' pessoa(s)':''],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Observações',r.obs]],
+    'Responda este e-mail com o número de confirmação.');
+  _enviarGenerico(para, (cancel?'Cancelamento':'Reserva')+' '+r.id+' - '+(r.eventoNome||'')+' - '+(r.hospedeNome||r.clienteNome||''), html, 'E-mail enviado ao hotel');
+}
+// E-mail ao cliente: reserva confirmada, com o caminho do voucher
+function enviarEmailConfirmada(resId){
+  var r = S.reservas.find(function(x){ return x.id===resId; }); if(!r) return;
+  var base = window.location.href.split('?')[0];
+  var html = _emailCorpo('Reserva confirmada',
+    'Olá, '+_escH((r.clienteNome||'').split(' ')[0])+'! Sua reserva foi confirmada pelo hotel.',
+    [['Reserva',r.id],['Confirmação do hotel',r.numHotel],['Evento',r.eventoNome],['Hotel',r.hotel],['Quarto',r.quarto],['Hóspede',r.hospedeNome||r.clienteNome],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Valor total',fmt(r.total||0)]],
+    'Seu voucher está disponível na área do cliente: <a href="'+_escH(base)+'">acesse sua conta</a> e clique em Voucher na reserva.');
+  _enviarGenerico(r.clienteEmail, 'Reserva '+r.id+' confirmada - '+(r.eventoNome||''), html, 'E-mail de confirmação enviado ao cliente');
 }
 
 function abrirPreviewEmail(resId, tipo) {
