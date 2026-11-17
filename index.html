@@ -5273,6 +5273,9 @@ function abrirVoucherPublico(resId){
     if(ag.wpp){
       contEl.innerHTML += ' · <a href="https://wa.me/' + ag.wpp + '" target="_blank" style="color:#25D366;font-weight:700;text-decoration:none">&#128242; WhatsApp</a>';
     }
+    if(ag.wppPlantao){
+      contEl.innerHTML += '<br><span style="font-size:12px;opacity:.9">Plantão emergencial (apenas urgências, final ' + String(ag.wppPlantao).slice(-4) + '): <a href="https://wa.me/' + ag.wppPlantao + '" target="_blank" style="color:#25D366;font-weight:700;text-decoration:none">WhatsApp</a></span>';
+    }
   }
 
   var loading  = $('vp-loading');
@@ -5331,7 +5334,7 @@ function abrirVoucherPublico(resId){
       +'<div class="v-row" style="font-weight:700;font-size:15px;color:var(--bm)"><span>Total</span><span>'+fmt(r.total)+'</span></div>'
       +'<div class="v-row"><span class="lbl">Diária</span><span class="val">'+fmt(r.preco)+'/noite</span></div>'
       +'<div class="v-row"><span class="lbl">Pagamento</span><span class="val">'+r.pagamento+'</span></div>'
-      +'<div class="voucher-footer">'+(ag.nome||'Feiras & Congressos')+(ag.email?' &bull; '+ag.email:'')+(ag.wpp?' &bull; <a href="https://wa.me/'+ag.wpp+'" style="color:#25D366;font-weight:700">WhatsApp</a>':'')+'<br>'+rodape+'</div>';
+      +'<div class="voucher-footer">'+(ag.nome||'Feiras & Congressos')+(ag.email?' &bull; '+ag.email:'')+(ag.wpp?' &bull; <a href="https://wa.me/'+ag.wpp+'" style="color:#25D366;font-weight:700">WhatsApp</a>':'')+(ag.wppPlantao?'<br>Plantão emergencial (apenas urgências, final '+String(ag.wppPlantao).slice(-4)+'): <a href="https://wa.me/'+ag.wppPlantao+'" style="color:#25D366;font-weight:700">WhatsApp</a>':'')+'<br>'+rodape+'</div>';
 
     conteudo.style.display = 'block';
   }, 400);
@@ -5558,6 +5561,7 @@ function initConfig(){
   setValue('cfg-ag-email',a.email);
   setValue('cfg-ag-tel',a.telefone);
   setValue('cfg-ag-wpp',a.wpp||'');
+  setValue('cfg-ag-wpp2',a.wppPlantao||'');
   setValue('cfg-ag-end',a.endereco);
   setValue('cfg-ag-site',a.site);
   setValue('cfg-ag-cnpj',a.cnpj);
@@ -5603,6 +5607,7 @@ function salvarConfig(secao){
     cfg.agencia.email     = document.getElementById('cfg-ag-email')?.value||'';
     cfg.agencia.telefone  = document.getElementById('cfg-ag-tel')?.value||'';
     cfg.agencia.wpp       = document.getElementById('cfg-ag-wpp')?.value.replace(/\D/g,'')||'';
+    cfg.agencia.wppPlantao = document.getElementById('cfg-ag-wpp2')?.value.replace(/\D/g,'')||'';
     cfg.agencia.endereco  = document.getElementById('cfg-ag-end')?.value||'';
     cfg.agencia.site      = document.getElementById('cfg-ag-site')?.value||'';
     cfg.agencia.cnpj      = document.getElementById('cfg-ag-cnpj')?.value||'';
