@@ -6653,7 +6653,7 @@ function getDestinatarios(r, tipo) {
     dests.push({ role: 'Cliente', nome: r.clienteNome, email: r.clienteEmail, icon: '👤' });
   }
   // Agência
-  var agEmail = S.config.notif.emails || ag.email || '';
+  var agEmail = ((S.config.notif||{}).emails) || ag.email || '';
   if (agEmail) {
     dests.push({ role: 'Agência', nome: ag.nome || 'Agência', email: agEmail, icon: '🏢' });
   }
@@ -6956,6 +6956,15 @@ var db = null;
 var fbSaveAll = null;
 
 const COLECOES = ['hoteis','eventos','grupos','usuarios','config'];
+// Dados que o site público pode ler (cópia sem comissões, e-mails de hotel e dados internos)
+const COLS_PUBLICAS = ['hoteis','eventos','config'];
+function _dadosPublicos(col){
+  var v = JSON.parse(JSON.stringify(S[col]));
+  if(col==='eventos'){ (v||[]).forEach(function(ev){ (ev.hoteis||[]).forEach(function(eh){ delete eh.financeiro; }); }); }
+  if(col==='hoteis'){ (v||[]).forEach(function(h){ delete h.email; }); }
+  if(col==='config'){ v.financeiro={}; v.notif={emails:''}; v.seguranca={logAcessos:[]}; }
+  return v;
+}
 var _fbListeners = [];
 var _fbSaveTimer = null;
 
@@ -7148,7 +7157,10 @@ fbSaveAll = async function(){
       var cols = _colsGravaveis();
       if(cols.length){
         var batch = db.batch();
-        cols.forEach(function(col){ batch.set(db.collection('sistema').doc(col), { data: JSON.stringify(S[col]), updated: Date.now() }); });
+        cols.forEach(function(col){
+          batch.set(db.collection('sistema').doc(col), { data: JSON.stringify(S[col]), updated: Date.now() });
+          if(COLS_PUBLICAS.indexOf(col)>=0) batch.set(db.collection('publico').doc(col), { data: JSON.stringify(_dadosPublicos(col)), updated: Date.now() });
+        });
         await batch.commit();
       }
       if(S.papel==='equipe'){ await sincEstoqueTotais(); await sincReservasStaff(); }
@@ -7169,10 +7181,11 @@ async function fbLoad(){
   if(!db) return false;
   setSyncStatus('loading');
   var temDados = false;
-  for(var i=0; i<COLECOES.length; i++){
-    var col = COLECOES[i];
+  var _eq = (S.papel==='equipe'), _cols = _eq ? COLECOES : COLS_PUBLICAS, _orig = _eq ? 'sistema' : 'publico';
+  for(var i=0; i<_cols.length; i++){
+    var col = _cols[i];
     try {
-      var snap = await db.collection('sistema').doc(col).get();
+      var snap = await db.collection(_orig).doc(col).get();
       _fbOk[col] = true;
       if(snap.exists && snap.data() && snap.data().data){
         var parsed = JSON.parse(snap.data().data);
@@ -7195,8 +7208,9 @@ function fbListen(){
     var vel = document.getElementById('v-eventos-lista');
     if(vel && vel.classList.contains('active')) renderEventosLista();
   }, function(){}));
-  COLECOES.forEach(function(col){
-    var unsub = db.collection('sistema').doc(col).onSnapshot(function(snap){
+  var _eq2 = (S.papel==='equipe');
+  (_eq2 ? COLECOES : COLS_PUBLICAS).forEach(function(col){
+    var unsub = db.collection(_eq2 ? 'sistema' : 'publico').doc(col).onSnapshot(function(snap){
       if(snap.exists && snap.data() && snap.data().data){
         try {
           var parsed = JSON.parse(snap.data().data);
