@@ -148,7 +148,7 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
 .bk-header .client-btn:hover{background:rgba(255,255,255,.2)}
 
 .bk-hero{color:#fff;text-align:center;overflow:hidden}
-.bk-hero-banner{width:100%;max-height:260px;object-fit:cover;display:block}
+.bk-hero-banner{width:100%;height:auto;max-height:340px;object-fit:cover;object-position:center;display:block}
 .bk-hero-banner-ph{background:linear-gradient(135deg,var(--bd),var(--bm));height:180px;display:flex;align-items:center;justify-content:center}
 .bk-hero-info{background:linear-gradient(135deg,var(--bd),var(--bm));padding:20px 20px 24px;color:#fff;text-align:center}
 .bk-hero .ev-icon{font-size:42px;margin-bottom:8px}
@@ -182,7 +182,7 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
 .hotel-cards{display:flex;flex-direction:column;gap:16px}
 .hcard{background:#fff;border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;transition:transform .18s,box-shadow .18s}
 .hcard:hover{transform:translateY(-2px);box-shadow:var(--shl)}
-.hcard-img{width:100%;height:150px;background:linear-gradient(135deg,var(--bl),var(--g200));display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:var(--bm);font-family:'DM Serif Display',serif}
+.hcard-img{width:100%;height:130px;background:linear-gradient(135deg,var(--bl),var(--g200));display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:var(--bm);font-family:'DM Serif Display',serif}
 .hcard-body{padding:16px}
 .hcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
 .hcard-top h3{font-size:15px;font-weight:700;color:var(--bd)}
@@ -687,14 +687,16 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
         </div>
         <div class="buscar-wrap" style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-buscar" onclick="renderBkHotels()">&#128269; Buscar disponibilidade</button>
-          <button onclick="openGrupoMotor()" style="padding:12px 20px;border-radius:12px;border:2px dashed var(--bb);background:var(--bl);color:var(--bb);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">&#128101; Reserva de Grupo</button>
+          <div style="flex:1;min-width:220px;align-self:center;font-size:13px;color:var(--bm)">&#128101; Para 5 ou mais quartos, fale com a agência: <a href="https://wa.me/5511934643019" target="_blank" rel="noopener" style="color:var(--bb);font-weight:700">(11) 93464-3019</a></div>
         </div>
         <div id="bk-data-aviso" style="display:none;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 14px;font-size:13px;color:#92400e;margin-top:8px"></div>
       </div>
       <div class="map-card">
-        <div class="map-ph"><div class="map-ico">📍</div><p id="bk-map-local">Local do evento</p><span>Hotéis parceiros nas proximidades</span></div>
+        <div id="bk-map" style="display:none;height:340px;z-index:0"></div>
+        <div class="map-ph" id="bk-map-ph"><div class="map-ico">📍</div><p id="bk-map-local">Local do evento</p><span>Hotéis parceiros nas proximidades</span></div>
       </div>
       <div class="section-lbl">Hotéis Disponíveis</div>
+      <div id="bk-sort-wrap" style="display:none;align-items:center;gap:8px;margin:-4px 0 12px;font-size:13px;color:var(--g700)"><span>Ordenar por</span><select id="bk-sort" onchange="ordenarHoteisBk()" style="padding:6px 10px;border:1.5px solid var(--g300);border-radius:8px;font-family:inherit;font-size:13px;background:#fff"><option value="ord">Recomendados</option><option value="preco">Menor preço</option><option value="dist">Menor distância</option></select></div>
       <div class="hotel-cards" id="bk-hotel-cards"></div>
     </div>
   </div>
@@ -747,7 +749,7 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
       <div class="price" id="ck-price">—</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-ghost" style="font-size:13px;border:1.5px solid var(--g300)" onclick="openGrupoMotor()">&#128101; Reserva de Grupo</button>
+
       <button class="btn btn-green" onclick="openCheckoutSheet()">Reservar agora &#8594;</button>
     </div>
   </div>
@@ -896,7 +898,15 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
       <div class="fg"><label>Distância ao evento</label><input id="h-dist" placeholder="800 m"></div>
     </div>
     <div class="fg"><label>Endereço</label><input id="h-end" placeholder="Av. Exemplo, 123 – SP"></div>
-    <div class="fg"><label>Destaques (separados por vírgula)</label><input id="h-tags" placeholder="Café da manhã, Wi-Fi, Estacionamento"></div>
+    <div class="row2">
+      <div class="fg"><label>Latitude</label><input id="h-lat" placeholder="-23.6322"></div>
+      <div class="fg"><label>Longitude</label><input id="h-lng" placeholder="-46.7081"></div>
+    </div>
+    <div class="fg"><label>Calcular distância até o evento</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="h-geo-ev" style="flex:1;min-width:180px"></select>
+      <button type="button" class="btn btn-ghost" style="font-size:13px" onclick="geoHotel()">&#128205; Localizar e calcular distância</button></div>
+      <div class="input-hint" id="h-geo-msg">Usa o endereço acima (OpenStreetMap). A distância é de carro; confira antes de publicar.</div></div>
+    <div class="fg"><label>Destaques (separados por vírgula; vírgula entre números, como R$ 35,00, é mantida)</label><input id="h-tags" placeholder="Café da manhã, Wi-Fi, Estacionamento"></div>
     <div class="sep"></div>
     <div style="font-size:13px;font-weight:700;color:var(--bd);margin-bottom:12px">📸 Fotos do Hotel</div>
     <input type="file" id="h-img-input" accept="image/*" multiple style="display:none" onchange="handleHotelImages(this)">
@@ -1478,6 +1488,10 @@ const S = {
 /* ═══════════════ UTILS ═══════════════ */
 const $=id=>document.getElementById(id);
 const fmt=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2});
+const issPctDe=(eid,hid)=>{try{var ev=getEvento(eid),eh=ev&&ev.hoteis.find(function(x){return x.hid===hid;});if(eh&&eh.financeiro&&eh.financeiro.iss&&eh.financeiro.iss.tipo==='pct')return Number(eh.financeiro.iss.val)||0;}catch(e){}return 5;};
+const issDe=(base,pct)=>Math.round(base*pct)/100;
+const totalCli=r=>(r&&r.totalCliente)?r.totalCliente:(r?r.total:0);
+const issRes=r=>(r&&r.iss)?r.iss:0;
 const fmtD=d=>{if(!d)return'—';const[y,m,di]=d.split('-');return`${di}/${m}/${y}`};
 const days=(a,b)=>Math.max(1,Math.round((new Date(b)-new Date(a))/86400000));
 const slug=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -1495,7 +1509,7 @@ function reservadosQ(ev,hid,tipo){
 // Número da reserva para a EQUIPE (o cliente usa o contador do servidor, dentro da transação)
 const genResId=()=>{ var mx=window._contadorN||0; S.reservas.forEach(function(r){ mx=Math.max(mx,_idNum(r.id)); }); return 'FC-'+String(mx+1).padStart(5,'0'); };
 const genGrpId=()=>'GRP-'+String(S.grupos.length+1).padStart(5,'0');
-const baseUrl=()=>window.location.href.split('?')[0];
+const baseUrl=()=>window.location.href.split('?')[0].split('#')[0].replace(/admin\.html$/,'');
 
 // ── Hash de senha (SHA-256 via Web Crypto API) ──────────────────
 async function hashSenha(senha){
@@ -1881,11 +1895,11 @@ function abrirFinanceiro(id){
   $('fin-sub').textContent = id + ' – ' + r.clienteNome + ' – ' + r.eventoNome;
   $('fin-status-pgto').value  = r.fin.statusPgto  || 'Pendente';
   $('fin-vencimento').value   = r.fin.vencimento  || '';
-  $('fin-total').value        = r.total;
+  $('fin-total').value        = totalCli(r);
   $('fin-pago').value         = r.fin.valorPago   || '';
   $('fin-repasse-status').value = r.fin.repasseStatus || 'Pendente';
   $('fin-repasse-data').value   = r.fin.repasseData   || '';
-  $('fin-repasse-valor').value  = r.fin.repasseValor  || (r.total - (r.fin.comValor || comSugerida)).toFixed(2);
+  $('fin-repasse-valor').value  = r.fin.repasseValor  || (r.total + issRes(r) - (r.fin.comValor || comSugerida)).toFixed(2);
   $('fin-com-status').value   = r.fin.comStatus  || 'Pendente';
   $('fin-com-data').value     = r.fin.comData    || '';
   $('fin-com-valor').value    = r.fin.comValor>0 ? r.fin.comValor : comSugerida.toFixed(2);
@@ -1914,7 +1928,7 @@ function salvarFinanceiro(){
   if(!r) return;
   if(!r.fin) r.fin = {};
   var pago  = parseFloat($('fin-pago').value)||0;
-  var total = r.total;
+  var total = totalCli(r);
   r.fin.statusPgto    = $('fin-status-pgto').value;
   r.fin.valorPago     = pago;
   r.fin.vencimento    = $('fin-vencimento').value;
@@ -2984,12 +2998,12 @@ function renderDash(){
   verificarConcluidos();
   $('st-res').textContent  = reservasFiltradas.length;
   $('st-conf').textContent = reservasFiltradas.filter(function(r){ return r.status==='Confirmado'; }).length;
-  var tot = reservasFiltradas.reduce(function(a,r){ return a+r.total; }, 0);
+  var tot = reservasFiltradas.filter(function(r){ return r.status!=='Cancelado'; }).reduce(function(a,r){ return a+totalCli(r); }, 0);
   $('st-rec').textContent  = tot>=1000 ? 'R$'+(tot/1000).toFixed(1)+'k' : fmt(tot);
   $('st-cli').textContent  = hid ? '—' : S.clientes.length;
   $('dash-tbody').innerHTML = reservasFiltradas.slice(-5).reverse().map(function(r){
     var ev=getEvento(r.eventoId), h=getHotel(r.hid);
-    return '<tr><td><b>'+r.id+'</b></td><td>'+r.clienteNome+'</td><td>'+(ev?ev.nome:'—')+'</td><td>'+(h?h.nome:'—')+'</td><td><b>'+fmt(r.total)+'</b></td><td><span class="badge '+badgeCls(r.status)+'">'+r.status+'</span></td></tr>';
+    return '<tr><td><b>'+r.id+'</b></td><td>'+r.clienteNome+'</td><td>'+(ev?ev.nome:'—')+'</td><td>'+(h?h.nome:'—')+'</td><td><b>'+fmt(totalCli(r))+'</b></td><td><span class="badge '+badgeCls(r.status)+'">'+r.status+'</span></td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--g400);padding:20px">Nenhuma reserva ainda.</td></tr>';
 }
 const badgeCls=s=>s==='Confirmado'?'badge-green':s==='Pendente'?'badge-yellow':s==='Aguardando pagamento'?'badge-orange':s==='Alterado'?'badge-blue':s==='Cancelado'?'badge-red':'badge-orange';
@@ -3001,7 +3015,7 @@ function copiarLinkAtual(){
 }
 
 function copiarLinkEvento(evId){
-  var base = window.location.href.split('?')[0];
+  var base = baseUrl();
   var link = base + '?evento=' + evId;
   if(navigator.clipboard){
     navigator.clipboard.writeText(link).then(function(){
@@ -3170,7 +3184,7 @@ function renderReservasAdm(){
       <td>${r.clienteNome}${hospedeInfo}</td><td>${ev?ev.nome:'—'}</td>
       <td>${h?h.nome:'—'}<br><small style="color:var(--g400)">${r.quarto}${pessoasInfo}</small></td>
       <td>${fmtD(r.ci)} – ${fmtD(r.co)}</td>
-      <td><b>${fmt(r.total)}</b></td>
+      <td><b>${fmt(totalCli(r))}</b></td>
       <td>${finBadgePgto(r)}${venc}</td>
       <td><span class="badge ${badgeCls(r.status)}">${r.status}</span></td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
@@ -3366,7 +3380,7 @@ function renderHoteisAdm(){
     +'</tr>';
   }).join('');
 }
-function removeHotelAdm(id){S.hoteis=S.hoteis.filter(h=>h.id!==id);renderHoteisAdm();toast('Hotel removido.');}
+function removeHotelAdm(id){S.hoteis=S.hoteis.filter(h=>h.id!==id);renderHoteisAdm();fbSaveAll && fbSaveAll();toast('Hotel removido.');}
 
 /* ═══════════════ RECUPERAÇÃO / RESET DE SENHA ═══════════════ */
 
@@ -3496,7 +3510,7 @@ function verReservasCliente(id){
           +'<div><span style="color:var(--g400)">Check-in:</span> '+fmtD(r.ci)+'</div>'
           +'<div><span style="color:var(--g400)">Check-out:</span> '+fmtD(r.co)+'</div>'
           +'<div><span style="color:var(--g400)">Noites:</span> '+r.noites+'</div>'
-          +'<div><span style="color:var(--g400);font-weight:700">Total:</span> <b style="color:var(--bd)">'+fmt(r.total)+'</b></div>'
+          +'<div><span style="color:var(--g400);font-weight:700">Total:</span> <b style="color:var(--bd)">'+fmt(totalCli(r))+'</b></div>'
         +'</div>'
         +'<div style="display:flex;gap:8px;margin-top:10px">'
           +'<button class="btn-sm" style="background:var(--bl);color:var(--bb);border:none" onclick="closeOverlay(\'modal-reservas-cliente\');openVoucher(\''+r.id+'\')">&#127960;&#65039; Voucher</button>'
@@ -3541,6 +3555,7 @@ function openEvModal(editId){
   else { if(bannerImg){ bannerImg.src=''; bannerImg.style.display='none'; } if(bannerPh) bannerPh.style.display=''; }
   $('ev-desc').value=ev?ev.desc:'';$('ev-ini').value=ev?ev.ini:'';
   $('ev-fim').value=ev?ev.fim:'';$('ev-local').value=ev?ev.local:'';
+  if($('ev-lat')){ $('ev-lat').value=(ev&&ev.lat!=null)?ev.lat:''; $('ev-lng').value=(ev&&ev.lng!=null)?ev.lng:''; var _gm=$('ev-geo-msg'); if(_gm) _gm.textContent='Preenche latitude e longitude pelo nome do local (OpenStreetMap). Com as coordenadas, a página do evento mostra o mapa.'; }
   $('ev-status').value=ev?ev.status:'Aberto';
 
   S.hEntryCount=0;$('ev-hoteis-wrap').innerHTML='';
@@ -3885,7 +3900,7 @@ function addQRow(idx){
   if(qCont) qCont.appendChild(makeQRow({}));
 }
 
-function saveEvento(){
+function saveEvento(){ if(S._uplB>0){toast('⏳ Aguarde o envio do banner terminar.');return;}
   var user = S.currentUser;
   var isHotel = user && user.perfil === 'hotel';
   var hotelId = isHotel ? user.hotelId : null;
@@ -3970,13 +3985,13 @@ function saveEvento(){
       var outrosHoteis = evExist.hoteis.filter(function(eh){ return parseInt(eh.hid) !== parseInt(hotelId); });
       evExist.hoteis = outrosHoteis.concat(hoteis);
     } else {
-      const ev={id:S.editingEvId,nome,emoji:$('ev-emoji').value||'🎪',desc:$('ev-desc').value,ini:$('ev-ini').value,fim:$('ev-fim').value,local:$('ev-local').value,status:$('ev-status').value,hoteis,banner};
+      const ev={id:S.editingEvId,nome,emoji:$('ev-emoji').value||'🎪',desc:$('ev-desc').value,ini:$('ev-ini').value,fim:$('ev-fim').value,local:$('ev-local').value,status:$('ev-status').value,lat:_numOuNull('ev-lat'),lng:_numOuNull('ev-lng'),hoteis,banner};
       S.eventos[i]=ev;
     }
   } else {
     if(isHotel){ toast('&#9888; Perfil Hotel não pode criar eventos.'); return; }
     const id=S.editingEvId||slug($('ev-nome').value);
-    const ev={id,nome,emoji:$('ev-emoji').value||'🎪',desc:$('ev-desc').value,ini:$('ev-ini').value,fim:$('ev-fim').value,local:$('ev-local').value,status:$('ev-status').value,hoteis,banner};
+    const ev={id,nome,emoji:$('ev-emoji').value||'🎪',desc:$('ev-desc').value,ini:$('ev-ini').value,fim:$('ev-fim').value,local:$('ev-local').value,status:$('ev-status').value,lat:_numOuNull('ev-lat'),lng:_numOuNull('ev-lng'),hoteis,banner};
     S.eventos.push(ev);
   }
 
@@ -3993,6 +4008,7 @@ function openHotelModal(hid){
   const h=hid?getHotel(hid):null;
   $('h-nome').value=h?h.nome:'';$('h-email').value=h?h.email||'':'';$('h-cat').value=h?h.cat:'⭐⭐⭐';
   $('h-dist').value=h?h.dist:'';$('h-end').value=h?h.end:'';
+  if($('h-lat')){ $('h-lat').value=(h&&h.lat!=null)?h.lat:''; $('h-lng').value=(h&&h.lng!=null)?h.lng:''; _preencheGeoEv(); var _hm=$('h-geo-msg'); if(_hm) _hm.textContent='Usa o endereço acima (OpenStreetMap). A distância é de carro; confira antes de publicar.'; }
   $('h-tags').value=h?h.tags.join(', '):'';
   $('h-pol-tipo').value=h?h.pol.tipo:'flexivel';
   $('h-pol-prazo').value=h?h.pol.prazo:7;$('h-pol-multa').value=h?h.pol.multa:50;
@@ -4013,15 +4029,49 @@ function togglePolFields(){
   const t=$('h-pol-tipo').value;
   $('pol-prazo-wrap').style.display=t==='rigida'?'none':'block';
 }
+/* Envia imagem (data URL) ao Firebase Storage e devolve o link publico; se o Storage nao estiver ativo, devolve null */
+async function uploadFoto(dataUrl, pasta){
+  try{
+    if(window._storageUnavailable || !firebase.storage || !firebase.auth().currentUser) return null;
+    var nome='fotos/'+pasta+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';
+    var ref=firebase.storage().ref(nome);
+    await ref.putString(dataUrl,'data_url',{contentType:'image/jpeg'});
+    return await ref.getDownloadURL();
+  }catch(e){ console.warn('Storage indisponivel:',e&&e.code||e); return null; }
+}
+function _comprimir(im,maxW,q0,maxLen,qMin){
+  var W=Math.min(maxW,im.width),H=Math.round(im.height*W/im.width);
+  var cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,W,H);cx.drawImage(im,0,0,W,H);
+  var q=q0,out=cv.toDataURL('image/jpeg',q);
+  while(out.length>maxLen&&q>qMin){q-=0.1;out=cv.toDataURL('image/jpeg',q);}
+  return out;
+}
 function handleBannerUpload(input){
   var file = input.files[0]; if(!file) return;
   var reader = new FileReader();
   reader.onload = function(e){
-    S.tempBanner = e.target.result;
-    var img = $('ev-banner-img');
-    var ph  = $('ev-banner-ph');
-    if(img){ img.src = e.target.result; img.style.display = 'block'; }
-    if(ph)  ph.style.display = 'none';
+    var im = new Image();
+    im.onload = async function(){
+      S._uplB=(S._uplB||0)+1;
+      try{
+        var alta=_comprimir(im,1600,0.85,500000,0.5);
+        var url=await uploadFoto(alta,'banners');
+        var out=url;
+        if(!url){
+          out=_comprimir(im,1200,0.7,150000,0.3);
+          if(out.length>200000){ toast('⚠️ Imagem muito pesada. Use uma imagem menor.',5000); return; }
+          toast('ℹ️ Storage não ativo: banner salvo comprimido no banco.',4000);
+        }
+        S.tempBanner = out;
+        var img = $('ev-banner-img');
+        var ph  = $('ev-banner-ph');
+        if(img){ img.src = out; img.style.display = 'block'; }
+        if(ph)  ph.style.display = 'none';
+      } finally { S._uplB--; }
+    };
+    im.onerror = function(){ toast('⚠️ Não foi possível ler a imagem.'); };
+    im.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -4037,14 +4087,30 @@ function handleHotelImages(input){
   Array.from(input.files).forEach(file=>{
     const reader=new FileReader();
     reader.onload=e=>{
-      S.tempImgs.push(e.target.result);
-      const item=document.createElement('div');item.className='img-preview-item';
-      const idx=S.tempImgs.length-1;
-      item.innerHTML=`<img src="${e.target.result}"><button class="img-remove" onclick="removePreviewImg(${idx},this)">✕</button>`;
-      preview.appendChild(item);
+      var im=new Image();
+      im.onload=async function(){
+        S._uplH=(S._uplH||0)+1;
+        try{
+          var alta=_comprimir(im,1200,0.8,300000,0.5);
+          var url=await uploadFoto(alta,'hoteis');
+          var out=url;
+          if(!url){
+            out=_comprimir(im,720,0.7,70000,0.3);
+            toast('ℹ️ Storage não ativo: foto salva bem comprimida no banco.',4000);
+          }
+          S.tempImgs.push(out);
+          const item=document.createElement('div');item.className='img-preview-item';
+          const idx=S.tempImgs.length-1;
+          item.innerHTML=`<img src="${out}"><button class="img-remove" onclick="removePreviewImg(${idx},this)">✕</button>`;
+          preview.appendChild(item);
+        } finally { S._uplH--; }
+      };
+      im.onerror=function(){toast('⚠️ Não foi possível ler a foto.');};
+      im.src=e.target.result;
     };
     reader.readAsDataURL(file);
   });
+  input.value='';
 }
 function removePreviewImg(idx,btn){
   S.tempImgs.splice(idx,1);
@@ -4060,18 +4126,19 @@ function editHotel(id){
 }
 
 function saveHotel(){
+  if(S._uplH>0){toast('⏳ Aguarde o envio das fotos terminar.');return;}
   const nome=$('h-nome').value.trim();if(!nome){toast('⚠️ Informe o nome.');return;}
   const pol={tipo:$('h-pol-tipo').value,prazo:parseInt($('h-pol-prazo').value)||0,multa:parseInt($('h-pol-multa').value)||0,obs:$('h-pol-obs').value};
   const imgs=[...S.tempImgs];
   if(editingHotelId){
     const h=getHotel(editingHotelId);
-    h.nome=nome;h.email=$('h-email').value.trim();h.cat=$('h-cat').value;h.dist=$('h-dist').value;h.end=$('h-end').value;
-    h.tags=$('h-tags').value.split(',').map(t=>t.trim()).filter(Boolean);h.pol=pol;
+    h.nome=nome;h.email=$('h-email').value.trim();h.cat=$('h-cat').value;h.dist=$('h-dist').value;h.end=$('h-end').value;if($('h-lat')){h.lat=_numOuNull('h-lat');h.lng=_numOuNull('h-lng');}
+    h.tags=$('h-tags').value.split(/,(?!\d)/).map(t=>t.trim()).filter(Boolean);h.pol=pol;
     if(imgs.length)h.imgs=imgs;
   } else {
     const maxId=S.hoteis.reduce((a,h)=>Math.max(a,h.id),0);
     var novoId = maxId+1;
-    S.hoteis.push({id:novoId,nome,email:$('h-email').value.trim(),cat:$('h-cat').value,dist:$('h-dist').value,end:$('h-end').value,tags:$('h-tags').value.split(',').map(t=>t.trim()).filter(Boolean),imgs,pol});
+    S.hoteis.push({id:novoId,nome,email:$('h-email').value.trim(),cat:$('h-cat').value,dist:$('h-dist').value,end:$('h-end').value,lat:($('h-lat')?_numOuNull('h-lat'):null),lng:($('h-lng')?_numOuNull('h-lng'):null),tags:$('h-tags').value.split(/,(?!\d)/).map(t=>t.trim()).filter(Boolean),imgs,pol});
     // Se for perfil hotel, vincular automaticamente
     var user = S.currentUser;
     if(user && user.perfil === 'hotel' && !user.hotelId){
@@ -4081,7 +4148,7 @@ function saveHotel(){
     }
   }
   S.tempImgs=[];
-  closeOverlay('modal-hotel');renderHoteisAdm();toast('✅ Hotel salvo!');
+  closeOverlay('modal-hotel');renderHoteisAdm();fbSaveAll && fbSaveAll();toast('✅ Hotel salvo!');
 }
 function openBooking(evId){
   initQuartosConfig();
@@ -4124,6 +4191,7 @@ function openBooking(evId){
   $('bk-ev-desc').textContent=ev.desc;
   $('bk-ev-badge').textContent=ev.nome;
   $('bk-map-local').textContent=ev.local;
+  try{ renderBkMap(ev); }catch(e){ console.warn('mapa',e); }
   $('bk-chips').innerHTML=[`📅 ${fmtD(ev.ini)} a ${fmtD(ev.fim)}`,`📍 ${ev.local}`].map(c=>`<span class="chip">${c}</span>`).join('');
   $('bk-ci').value=ev.ini;$('bk-co').value=ev.fim;
 
@@ -4251,7 +4319,7 @@ function renderHistoricoCliente(){
       +'<div class="res-row"><span class="lbl">Hotel</span><span class="val">'+r.hotel+'</span></div>'
       +'<div class="res-row"><span class="lbl">Check-in</span><span class="val">'+fmtD(r.ci)+'</span></div>'
       +'<div class="res-row"><span class="lbl">Check-out</span><span class="val">'+fmtD(r.co)+'</span></div>'
-      +'<div class="res-total"><span class="t-lbl">Total</span><span class="t-val">'+fmt(r.total)+'</span></div>'
+      +'<div class="res-total"><span class="t-lbl">Total</span><span class="t-val">'+fmt(totalCli(r))+'</span></div>'
       +motivoHtml
       +'<div class="res-actions"><button class="btn btn-ghost" onclick="openVoucher(\''+r.id+'\')">Voucher</button></div>'
       +'</div></div>';
@@ -4403,11 +4471,11 @@ function renderBkHotels(){
       var semDisp = !esgotado && q.disp!==undefined && dispCount < nQuartos;
       var capExcedida = q.cap!==undefined && nPessoas > q.cap;
       var bloqueado = esgotado || capExcedida;
-      var dispTxt = q.disp!==undefined ? (esgotado?'Esgotado':dispCount+' disp.') : '';
+      var dispTxt = q.disp!==undefined ? (esgotado?'Esgotado':(dispCount<=5?(dispCount===1?'Último quarto':'Últimos '+dispCount+' quartos'):'')) : '';
       var dispColor = esgotado?'var(--red)':dispCount<=3?'var(--orange)':'var(--green)';
       var dispBg = esgotado?'var(--red-l)':dispCount<=3?'var(--orange-l)':'var(--green-l)';
-      var dispBadge = q.disp!==undefined ? '<span style="font-size:11px;background:'+dispBg+';color:'+dispColor+';padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px">'+dispTxt+'</span>' : '';
-      var capBadge = q.cap!==undefined ? '<span style="font-size:11px;background:var(--g200);color:var(--g700);padding:2px 8px;border-radius:6px;margin-left:6px">Max: '+q.cap+' pessoa(s)/quarto</span>' : '';
+      var dispBadge = (q.disp!==undefined && dispTxt) ? '<span style="font-size:11px;background:'+dispBg+';color:'+dispColor+';padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px">'+dispTxt+'</span>' : '';
+      var capBadge = q.cap!==undefined ? '<span style="font-size:11px;background:var(--g200);color:var(--g700);padding:2px 8px;border-radius:6px;margin-left:6px;white-space:nowrap">Até '+q.cap+(q.cap===1?' pessoa':' pessoas')+'</span>' : '';
       var pessoasAlert = bkQuartos.filter(function(bq){ return bq.pessoas > (q.cap||99); });
       var capMsg = pessoasAlert.length>0 ? pessoasAlert.map(function(bq){ return 'Quarto '+(bkQuartos.indexOf(bq)+1)+': '+bq.pessoas+'p > limite '+q.cap; }).join(', ') : '';
       var aviso = capExcedida ? '<div style="font-size:11px;color:var(--red);margin-top:4px;font-weight:600">Capacidade excedida: '+capMsg+'</div>' :
@@ -4420,7 +4488,7 @@ function renderBkHotels(){
       var btnTxt = bloqueado ? (capExcedida?'Cap. excedida':'Esgotado') : 'Selecionar';
       var priceHtml = bloqueado
         ? '<div class="price"><span style="color:var(--g400)">'+(esgotado?'Esgotado':'Indisponivel')+'</span></div><div class="sub"></div>'
-        : '<div class="price">'+fmt(q.preco)+'</div><div class="sub">/noite x '+nQuartos+' quarto(s) x '+noites+'n = <b>'+fmt(precoTotal)+'</b></div>';
+        : '<div class="price">'+fmt(q.preco)+'<span style="font-size:12px;font-weight:600;color:var(--g400);font-family:Sora,sans-serif"> / diária</span></div><div class="sub">'+noites+(noites===1?' noite':' noites')+' × '+nQuartos+(nQuartos===1?' quarto':' quartos')+'</div><div class="sub" style="color:var(--bd);font-size:12px">Total com ISS '+issPctDe(S.currentEvento&&S.currentEvento.id,h.id)+'%: <b>'+fmt(precoTotal+issDe(precoTotal,issPctDe(S.currentEvento&&S.currentEvento.id,h.id)))+'</b></div>';
       var alimentacaoMap = {
         'sem_refeicao': { icon: '🚫', txt: 'Sem refeição inclusa', bg: 'var(--g200)', cor: 'var(--g700)' },
         'cafe':         { icon: '☕', txt: 'Café da manhã incluso', bg: 'var(--orange-l)', cor: 'var(--orange)' },
@@ -4438,21 +4506,34 @@ function renderBkHotels(){
     });
     var qs_html = qs;
 
-    const imgHtml=h.imgs&&h.imgs.length?`<img src="${h.imgs[0]}" style="width:100%;height:150px;object-fit:cover">`:
-      `<div style="width:100%;height:150px;background:linear-gradient(135deg,var(--bl),var(--g200));display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:var(--bm);font-family:DM Serif Display,serif">${h.nome.charAt(0)}</div>`;
-    c.innerHTML+=`<div class="hcard">
+    const imgHtml=h.imgs&&h.imgs.length?`<img src="${h.imgs[0]}" style="width:100%;height:130px;object-fit:cover">`:
+      `<div style="width:100%;height:130px;background:linear-gradient(135deg,var(--bl),var(--g200));display:flex;align-items:center;justify-content:center;font-size:52px;font-weight:800;color:var(--bm);font-family:DM Serif Display,serif">${h.nome.charAt(0)}</div>`;
+    var _precosOk=eh.quartos.filter(function(q){ var rv=reservadosQ(ev.id,h.id,q.tipo); return !(q.disp!==undefined && (q.disp-rv)<=0); }).map(function(q){ return q.preco; });
+    var _minPreco=_precosOk.length?Math.min.apply(null,_precosOk):999999;
+    var _dm=String(h.dist||'').match(/([\d.,]+)\s*(km|m)\b/i); var _dKm=_dm?(parseFloat(_dm[1].replace(',','.'))/(/km/i.test(_dm[2])?1:1000)):999;
+    c.innerHTML+=`<div class="hcard" data-preco="${_minPreco}" data-dist="${_dKm}" data-ord="${eh.ordem||0}">
       <div class="hcard-img" style="padding:0;height:auto">${imgHtml}</div>
       <div class="hcard-body">
         <div class="hcard-top"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h3 style="margin:0">${h.nome}</h3>${eh.destaque==="oficial"?'<span style="background:var(--gold);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap">🏆 Hotel Oficial</span>':""}${eh.destaque==="recomendado"?'<span style="background:var(--bb);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap">⭐ Recomendado</span>':""}${eh.destaque==="melhor_custo"?'<span style="background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap">💰 Melhor Custo-Benefício</span>':""}${eh.destaque==="mais_proximo"?'<span style="background:var(--bm);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap">📍 Mais Próximo</span>':""}</div><span class="hcard-stars">${h.cat}</span></div>
-        ${(eh.tarifa_ini||eh.tarifa_fim||eh.deadline||tarifaAviso)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px">${eh.tarifa_ini?`<span style="font-size:11px;background:var(--bl);color:var(--bb);padding:2px 8px;border-radius:6px;font-weight:600">&#128197; Tarifas: ${fmtD(eh.tarifa_ini)} a ${fmtD(eh.tarifa_fim||"")}</span>`:""}${eh.deadline?`<span style="font-size:11px;background:var(--orange-l);color:var(--orange);padding:2px 8px;border-radius:6px;font-weight:600">&#9203; Reservas at\u00E9 ${fmtD(eh.deadline)}</span>`:""}</div>`:""}
+        ${(eh.deadline)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px">${eh.deadline?`<span style="font-size:11px;background:var(--orange-l);color:var(--orange);padding:2px 8px;border-radius:6px;font-weight:600">&#9203; Reservas at\u00E9 ${fmtD(eh.deadline)}</span>`:""}</div>`:""}
         <div class="hcard-tags">${h.tags.map(t=>`<span class="hcard-tag">${t}</span>`).join('')}</div>
-        <div class="hcard-dist">📍 ${h.dist} do local do evento</div>
+        ${h.dist?`<div class="hcard-dist">📍 ${h.dist} do local do evento</div>`:""}
         <div class="policy-badge ${pol.tipo==='flexivel'?'':pol.tipo==='moderada'?'moderate':'strict'}" onclick="showPol(${h.id})" title="Ver política">${polIcon} ${polTxt} <span style="opacity:.6;font-size:10px">ⓘ</span></div>
         <div class="quarto-list">${qs_html}</div>
       </div>
     </div>`;
   });
   if(!ev.hoteis.length)c.innerHTML='<div style="text-align:center;padding:32px;color:var(--g400)">Nenhum hotel disponível.</div>';
+  var _bs=$('bk-sort-wrap'); if(_bs) _bs.style.display=(ev.hoteis.length>=3)?'flex':'none';
+  ordenarHoteisBk();
+}
+
+function ordenarHoteisBk(){
+  var c=$('bk-hotel-cards'); if(!c) return;
+  var sel=$('bk-sort'); var modo=sel?sel.value:'ord';
+  var cards=[].slice.call(c.children);
+  var key=function(el){ var d=el.dataset||{}; if(modo==='preco') return parseFloat(d.preco||999999); if(modo==='dist') return parseFloat(d.dist||999); return parseFloat(d.ord||999999); };
+  cards.map(function(el,i){ return {el:el,i:i,k:key(el)}; }).sort(function(a,b){ return (a.k-b.k)||(a.i-b.i); }).forEach(function(o){ c.appendChild(o.el); });
 }
 
 function showPol(hid){
@@ -4541,9 +4622,11 @@ function selectQuarto(el,hid,hotel,tipo,preco,noites,alimentacao){
   var totalPessoas = qtdConfig.reduce(function(a,q){ return a+q.pessoas; },0);
   var total = preco * noites * qtd;
   S.selectedQ = {hid, hotel, tipo, preco, noites, total, qtd, qtdConfig, alimentacao: alimentacao||'sem_refeicao'};
+  S.selectedQ.issPct=issPctDe(S.currentEvento&&S.currentEvento.id,hid); S.selectedQ.iss=issDe(total,S.selectedQ.issPct);
   var pessoasSummary = qtdConfig.map(function(q,i){ return 'Q'+(i+1)+':'+q.pessoas+'p'; }).join(' | ');
   $('ck-name').textContent = hotel + ' – ' + tipo + ' · ' + qtd + ' quarto(s) · ' + totalPessoas + ' pessoa(s)';
-  $('ck-price').textContent = fmt(preco) + '/noite × ' + qtd + ' quartos × ' + noites + 'n = ' + fmt(total) + '  (' + pessoasSummary + ')';
+  var _ip=issPctDe(S.currentEvento&&S.currentEvento.id,hid), _iss=issDe(total,_ip);
+  $('ck-price').textContent = fmt(preco) + '/noite × ' + qtd + ' quartos × ' + noites + 'n = ' + fmt(total) + ' + ISS ' + _ip + '% ' + fmt(_iss) + ' = ' + fmt(total+_iss) + '  (' + pessoasSummary + ')';
   $('ck-bar').classList.add('visible');
 }
 
@@ -4699,7 +4782,9 @@ function buildOrderBox(containerId,q,ci,co){
     <div class="order-row"><span>Check-in</span><span>${fmtD(ci)}</span></div>
     <div class="order-row"><span>Check-out</span><span>${fmtD(co)}</span></div>
     <div class="order-row"><span>Noites</span><span>${q.noites}</span></div>
-    <div class="order-row total"><span>Total</span><span>${fmt(q.total)}</span></div>`;
+    <div class="order-row"><span>Diárias</span><span>${fmt(q.total)}</span></div>
+    <div class="order-row"><span>ISS (${q.issPct}%)</span><span>${fmt(q.iss)}</span></div>
+    <div class="order-row total"><span>Total com ISS</span><span>${fmt(q.total+q.iss)}</span></div>`;
 }
 function accTab(t,el){
   document.querySelectorAll('#acc-tab-new,#acc-tab-login').forEach(x=>x.classList.remove('active'));
@@ -4754,6 +4839,7 @@ function toggleCnpj(val){
   if(wrap) wrap.style.display = val.trim() ? '' : 'none';
 }
 
+function cpfValido(c){c=String(c||'').replace(/\D/g,'');if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(var t=9;t<11;t++){var d=0;for(var i=0;i<t;i++)d+=parseInt(c[i])*(t+1-i);d=((d*10)%11)%10;if(d!==parseInt(c[t]))return false;}return true;}
 function goStep2(){
   const nome=$('chk-nome')?.value.trim(),email=$('chk-email')?.value.trim(),wpp=$('chk-wpp')?.value.trim();
   if(!nome||!email){toast('⚠️ Preencha nome e e-mail.');return;}
@@ -4765,6 +4851,8 @@ function goStep2(){
     qi++;
   }
   if(hospedesArr.some(function(h){return !h;})){toast('⚠️ Informe o nome do hóspede em todos os quartos.');return;}
+  var _tp=$('chk-tipo-pessoa')?$('chk-tipo-pessoa').value:'pf', _cpfv=($('chk-cpf')?.value||'').trim();
+  if(_tp==='pf' && _cpfv && !cpfValido(_cpfv)){toast('⚠️ CPF inválido. Confira os números.');return;}
   S.checkoutRes={nome,email,cpf:$('chk-cpf')?.value||'',cnpj:$('chk-cnpj')?.value||'',wpp,emp:$('chk-emp')?.value||'',obs:$('chk-obs')?.value.trim()||'',hospedes:hospedesArr};
   setChkStep(2);
 }
@@ -4842,7 +4930,7 @@ function finalizarPagamento(){
       clienteId:S.loggedClient.id,clienteNome:S.loggedClient.nome,clienteEmail:S.loggedClient.email,
       hospedeNome: hospedeNome,
       eventoId:ev.id,eventoNome:ev.nome,hid:q.hid,hotel:q.hotel,quarto:q.tipo,alimentacao:q.alimentacao||'sem_refeicao',
-      ci,co,noites:q.noites,preco:q.preco,total:q.preco*q.noites,
+      ci,co,noites:q.noites,preco:q.preco,total:q.preco*q.noites,issPct:issPctDe(ev.id,q.hid),iss:issDe(q.preco*q.noites,issPctDe(ev.id,q.hid)),totalCliente:q.preco*q.noites+issDe(q.preco*q.noites,issPctDe(ev.id,q.hid)),
       qtd:1,pessoas,
       obs:S.checkoutRes?S.checkoutRes.obs||'':'',
       cpf:S.checkoutRes?S.checkoutRes.cpf||'':'',
@@ -4883,6 +4971,7 @@ function _posReserva(ids,qtd){
   else if((metodo==='Transferência'||metodo==='TED') && pgto.ted) instrucoes = pgto.ted;
   else if(metodo==='Boleto' && pgto.boleto) instrucoes = pgto.boleto;
   else if(metodo==='Faturado (PJ)' && pgto.faturado) instrucoes = pgto.faturado;
+  var temInstrMetodo = !!instrucoes;
   if(pgto.obs) instrucoes += (instrucoes?'\n\n':'')+pgto.obs;
 
   var pgtoBox = $('suc-pgto-box');
@@ -4896,7 +4985,7 @@ function _posReserva(ids,qtd){
 
   // Mostrar prazo
   var prazoEl = $('suc-prazo');
-  if(prazoEl && pgto.prazoHoras){
+  if(prazoEl && pgto.prazoHoras && temInstrMetodo){
     var deadline = new Date(Date.now() + pgto.prazoHoras*3600000);
     prazoEl.innerHTML = '&#9203; Pague até ' + deadline.toLocaleDateString('pt-BR') + ' às ' + deadline.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + ' para garantir sua reserva.';
     prazoEl.style.display = 'block';
@@ -4946,7 +5035,7 @@ function renderClienteReservas(){
         ${r.pessoas?`<div class="res-row"><span class="lbl">Hóspedes</span><span class="val">${r.pessoas} pessoa(s)</span></div>`:''}
         ${r.empresa?`<div class="res-row"><span class="lbl">Empresa</span><span class="val">${r.empresa}</span></div>`:''}
         ${r.obs?`<div class="res-row" style="align-items:flex-start"><span class="lbl">Observações</span><span class="val" style="font-style:italic;color:var(--bm)">${r.obs}</span></div>`:''}
-        <div class="res-total"><span class="t-lbl">Total pago</span><span class="t-val">${fmt(r.total)}</span></div>
+        <div class="res-total"><span class="t-lbl">${issRes(r)?'Total com ISS':'Total'}</span><span class="t-val">${fmt(totalCli(r))}</span></div>
         <div class="policy-info"><span class="pi-icon">📋</span><span>${polMsg}</span></div>
         <div class="res-actions">
           <button class="btn btn-ghost" onclick="openVoucher('${r.id}')">📄 Voucher</button>
@@ -5141,7 +5230,7 @@ function openVoucher(id){
       ${r.obs?'<div class="v-row" style="background:var(--bl);border-radius:8px;padding:8px 10px;margin-top:4px;align-items:flex-start"><span class="lbl">Observações</span><span class="val" style="font-style:italic">'+r.obs+'</span></div>':''}
       <div style="border-top:2px dashed var(--g300);margin:14px 0"></div>
       <div class="v-row" style="font-weight:700;font-size:15px;color:var(--bm)">
-        <span>Total Pago</span><span>${fmt(r.total)}</span>
+        <span>${issRes(r)?'Total com ISS ('+fmt(r.total)+' + ISS '+fmt(r.iss)+')':'Total'}</span><span>${fmt(totalCli(r))}</span>
       </div>
       <div class="v-row"><span class="lbl">Diária</span><span class="val">${fmt(r.preco)}/noite</span></div>
       <div class="v-row"><span class="lbl">Pagamento</span><span class="val">${r.pagamento}</span></div>
@@ -5332,7 +5421,7 @@ function abrirVoucherPublico(resId){
       +'<div class="v-row"><span class="lbl">Noites</span><span class="val">'+r.noites+'</span></div>'
       +(r.obs?'<div class="v-row" style="background:var(--bl);border-radius:8px;padding:8px 10px;margin-top:4px"><span class="lbl">Observações</span><span class="val" style="font-style:italic">'+r.obs+'</span></div>':'')
       +'<div style="border-top:2px dashed var(--g300);margin:14px 0"></div>'
-      +'<div class="v-row" style="font-weight:700;font-size:15px;color:var(--bm)"><span>Total</span><span>'+fmt(r.total)+'</span></div>'
+      +'<div class="v-row" style="font-weight:700;font-size:15px;color:var(--bm)"><span>Total'+(issRes(r)?' (diárias '+fmt(r.total)+' + ISS '+fmt(r.iss)+')':'')+'</span><span>'+fmt(totalCli(r))+'</span></div>'
       +'<div class="v-row"><span class="lbl">Diária</span><span class="val">'+fmt(r.preco)+'/noite</span></div>'
       +'<div class="v-row"><span class="lbl">Pagamento</span><span class="val">'+r.pagamento+'</span></div>'
       +'<div class="voucher-footer">'+(ag.nome||'Feiras & Congressos')+(ag.email?' &bull; '+ag.email:'')+(ag.wpp?' &bull; <a href="https://wa.me/'+ag.wpp+'" style="color:#25D366;font-weight:700">WhatsApp</a>':'')+(ag.wppPlantao?'<br>Plantão emergencial (apenas urgências, final '+String(ag.wppPlantao).slice(-4)+'): <a href="https://wa.me/'+ag.wppPlantao+'" style="color:#25D366;font-weight:700">WhatsApp</a>':'')+'<br>'+rodape+'</div>';
@@ -5448,7 +5537,7 @@ function renderExtratoFinanceiro(rs){
   Object.values(byEv).forEach(function(grupo){
     var conf = grupo.reservas.filter(function(r){ return r.status !== 'Cancelado'; });
     var canc = grupo.reservas.filter(function(r){ return r.status === 'Cancelado'; });
-    var receita = conf.reduce(function(a,r){ return a+r.total; }, 0);
+    var receita = conf.reduce(function(a,r){ return a+totalCli(r); }, 0);
     var iss=0, taxa=0, com=0;
     conf.forEach(function(r){
       var ev2 = getEvento(r.eventoId);
@@ -5456,7 +5545,7 @@ function renderExtratoFinanceiro(rs){
       var eh = ev2.hoteis.find(function(x){ return x.hid===r.hid; });
       if(!eh || !eh.financeiro) return;
       var fin = eh.financeiro;
-      iss  += fin.iss.tipo==='pct'  ? r.total*fin.iss.val/100  : fin.iss.val*r.noites;
+      iss  += r.iss ? r.iss : (fin.iss.tipo==='pct'  ? r.total*fin.iss.val/100  : fin.iss.val*r.noites);
       taxa += fin.taxa.tipo==='pct' ? r.total*fin.taxa.val/100 : fin.taxa.val*r.noites;
       com  += fin.com.tipo==='pct'  ? r.total*fin.com.val/100  : fin.com.val*r.noites;
     });
@@ -5469,11 +5558,11 @@ function renderExtratoFinanceiro(rs){
       if(!hotelMap[r.hid]) hotelMap[r.hid] = {nome:r.hotel, reservas:[], total:0, iss:0, taxa:0, com:0};
       var ev2=getEvento(r.eventoId), eh=ev2?ev2.hoteis.find(function(x){return x.hid===r.hid;}):null;
       var fin=eh?eh.financeiro:null;
-      var hiss =fin?( fin.iss.tipo==='pct'  ? r.total*fin.iss.val/100  : fin.iss.val*r.noites ):0;
+      var hiss =r.iss?r.iss:(fin?( fin.iss.tipo==='pct'  ? r.total*fin.iss.val/100  : fin.iss.val*r.noites ):0);
       var htax =fin?( fin.taxa.tipo==='pct' ? r.total*fin.taxa.val/100 : fin.taxa.val*r.noites ):0;
       var hcom =fin?( fin.com.tipo==='pct'  ? r.total*fin.com.val/100  : fin.com.val*r.noites ):0;
       hotelMap[r.hid].reservas.push(r);
-      hotelMap[r.hid].total += r.total;
+      hotelMap[r.hid].total += totalCli(r);
       hotelMap[r.hid].iss   += hiss;
       hotelMap[r.hid].taxa  += htax;
       hotelMap[r.hid].com   += hcom;
@@ -6098,15 +6187,15 @@ function renderFinanceiroConsolidado(){
   rs.forEach(function(r){
     var fin = r.fin || {};
     var pago = fin.valorPago || 0;
-    totalBruto    += r.total;
+    totalBruto    += totalCli(r);
     totalPago     += pago;
-    totalPendente += r.total - pago;
+    totalPendente += totalCli(r) - pago;
     if(fin.repasseStatus==='Repassado') totalRepassado += fin.repasseValor||0;
     if(fin.comStatus==='Recebida')      totalComRecebida += fin.comValor||0;
     else                                totalComPendente += fin.comValor||0;
     if(fin.statusPgto!=='Pago') {
       if(fin.vencimento) pendVenc.push(r);
-      if(pago>0 && pago<r.total) parciais.push(r);
+      if(pago>0 && pago<totalCli(r)) parciais.push(r);
       else if(!pago) repassePendente.push(r);
     }
     if(fin.comStatus!=='Recebida' && fin.comValor>0) comPendente.push(r);
@@ -6145,7 +6234,7 @@ function renderFinanceiroConsolidado(){
             +'<td><b>'+r.id+'</b></td>'
             +'<td>'+r.clienteNome+'</td>'
             +'<td style="font-size:12px">'+(ev?ev.nome:'—')+'</td>'
-            +'<td><b>'+fmt(r.total)+'</b></td>'
+            +'<td><b>'+fmt(totalCli(r))+'</b></td>'
             +'<td><span class="fin-badge '+clsPgto+'" onclick="abrirFinanceiro(\''+r.id+'\')" title="Editar">'+statusPgto+(fin.valorPago>0&&statusPgto!=='Pago'?' ('+fmt(fin.valorPago)+')':'')+'</span></td>'
             +'<td>'+vencStr+'</td>'
             +'<td><span class="fin-badge '+clsRep+'" onclick="abrirFinanceiro(\''+r.id+'\')" title="Editar">'+(fin.repasseStatus||'Pendente')+(fin.repasseValor>0?' '+fmt(fin.repasseValor):'')+'</span></td>'
@@ -6166,7 +6255,7 @@ function renderFinanceiroConsolidado(){
               +'<div><b>'+r.id+'</b> – '+r.clienteNome+' – '+(getEvento(r.eventoId)?getEvento(r.eventoId).nome:'')+'</div>'
               +'<div style="display:flex;gap:8px;align-items:center">'
                 +'<span style="font-size:12px;color:#dc2626">Venceu em '+fmtD(r.fin.vencimento)+'</span>'
-                +'<span style="font-weight:700">'+fmt(r.total - (r.fin.valorPago||0))+'</span>'
+                +'<span style="font-weight:700">'+fmt(totalCli(r) - (r.fin.valorPago||0))+'</span>'
                 +'<button class="btn-sm btn-sm-blue" onclick="abrirFinanceiro(\''+r.id+'\')">Atualizar</button>'
               +'</div>'
             +'</div>';
@@ -6632,7 +6721,7 @@ function buildEmailHtml(r, tipo) {
       </div>
       <div class="ep-total-box">
         <span class="ep-tl">Valor Total da Reserva</span>
-        <span class="ep-tv">${fmt(r.total)}</span>
+        <span class="ep-tv">${fmt(totalCli(r))}</span>
       </div>
       <div class="ep-footer">
         ${ag.nome || 'Feiras & Congressos'} &bull; ${ag.email || ''} &bull; ${ag.telefone || ''}<br>
@@ -6680,7 +6769,7 @@ function enviarEmailAutomatico(resId){
   var r = S.reservas.find(function(x){ return x.id===resId; });
   if(!r) return;
   var ag = S.config.agencia || {};
-  var baseUrl = window.location.href.split('?')[0];
+  var baseUrl = window.location.href.split('?')[0].split('#')[0].replace(/admin\.html$/,'');
   var params = {
     nome_cliente:     r.clienteNome || r.hospedeNome || 'Cliente',
     email_cliente:    r.clienteEmail || '',
@@ -6691,7 +6780,7 @@ function enviarEmailAutomatico(resId){
     checkin:          fmtD(r.ci),
     checkout:         fmtD(r.co),
     noites:           String(r.noites || ''),
-    total:            fmt(r.total || 0),
+    total:            fmt(totalCli(r) || 0) + (issRes(r) ? ' (diárias ' + fmt(r.total) + ' + ISS ' + fmt(r.iss) + ')' : ''),
     pagamento:        r.pagamento || '',
     telefone_agencia: ag.telefone || ag.wpp || '',
     email_agencia:    ag.email || '',
@@ -6746,10 +6835,10 @@ function enviarEmailHotel(resId){
 // E-mail ao cliente: reserva confirmada, com o caminho do voucher
 function enviarEmailConfirmada(resId){
   var r = S.reservas.find(function(x){ return x.id===resId; }); if(!r) return;
-  var base = window.location.href.split('?')[0];
+  var base = baseUrl();
   var html = _emailCorpo('Reserva confirmada',
     'Olá, '+_escH((r.clienteNome||'').split(' ')[0])+'! Sua reserva foi confirmada pelo hotel.',
-    [['Reserva',r.id],['Confirmação do hotel',r.numHotel],['Evento',r.eventoNome],['Hotel',r.hotel],['Quarto',r.quarto],['Hóspede',r.hospedeNome||r.clienteNome],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Valor total',fmt(r.total||0)]],
+    [['Reserva',r.id],['Confirmação do hotel',r.numHotel],['Evento',r.eventoNome],['Hotel',r.hotel],['Quarto',r.quarto],['Hóspede',r.hospedeNome||r.clienteNome],['Check-in',fmtD(r.ci)],['Check-out',fmtD(r.co)],['Noites',r.noites],['Valor total',fmt(totalCli(r)||0)]],
     'Seu voucher está disponível na área do cliente: <a href="'+_escH(base)+'">acesse sua conta</a> e clique em Voucher na reserva.');
   _enviarGenerico(r.clienteEmail, 'Reserva '+r.id+' confirmada - '+(r.eventoNome||''), html, 'E-mail de confirmação enviado ao cliente');
 }
@@ -6824,7 +6913,7 @@ function buildEmailTextoPlano(r, tipo) {
   linhas.push('Pagamento: ' + r.pagamento);
   if(r.obs) linhas.push('Observações: ' + r.obs);
   linhas.push('');
-  linhas.push('VALOR TOTAL: ' + (r.total ? 'R$ ' + Number(r.total).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—'));
+  linhas.push('VALOR TOTAL: ' + (totalCli(r) ? 'R$ ' + Number(totalCli(r)).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '—'));
   linhas.push('');
   linhas.push('---');
   linhas.push((ag.nome||'Feiras & Congressos') + (ag.email ? ' | ' + ag.email : '') + (ag.telefone ? ' | ' + ag.telefone : ''));
@@ -6945,6 +7034,9 @@ function confirmarCancelamentoAdmin() {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" onerror="window._fbUnavailable=true"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" onerror="window._fbUnavailable=true"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" onerror="window._fbUnavailable=true"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js" onerror="window._storageUnavailable=true"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" onerror="window._leafletUnavailable=true"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 (function(){
@@ -6964,6 +7056,83 @@ var fbSaveAll = null;
 const COLECOES = ['hoteis','eventos','grupos','usuarios','config'];
 // Dados que o site público pode ler (cópia sem comissões, e-mails de hotel e dados internos)
 const COLS_PUBLICAS = ['hoteis','eventos','config'];
+
+/* ===== v53: mapa e distância (OpenStreetMap, sem chave) ===== */
+function _numOuNull(id){ var e=document.getElementById(id); if(!e) return null; var v=parseFloat(String(e.value).replace(',','.')); return isFinite(v)?v:null; }
+function _nomEnd(t){ return String(t||'').replace(/CEP\s*[\d.\-]+/gi,'').replace(/\s+[–—-]\s+/g,', ').replace(/\/SP/g,'').replace(/\s+,/g,',').replace(/,\s*,/g,',').trim(); }
+async function _nominatim(q){
+  var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(q));
+  if(!r.ok) throw new Error('geocodificação indisponível');
+  var j=await r.json(); if(!j.length) return null;
+  return {lat:parseFloat(j[0].lat),lng:parseFloat(j[0].lon),nome:j[0].display_name};
+}
+async function _rota(a,b){
+  var r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a.lng+','+a.lat+';'+b.lng+','+b.lat+'?overview=false');
+  if(!r.ok) throw new Error('rota indisponível');
+  var j=await r.json(); if(!j.routes||!j.routes.length) return null;
+  return {m:j.routes[0].distance,min:Math.round(j.routes[0].duration/60)};
+}
+function _fmtDist(m){ if(m<1000) return Math.round(m/10)*10+' m'; return (m/1000).toFixed(1).replace('.',',')+' km'; }
+function _preencheGeoEv(){
+  var sel=document.getElementById('h-geo-ev'); if(!sel) return;
+  var evs=(S.eventos||[]).filter(function(e){ return isFinite(parseFloat(e.lat))&&isFinite(parseFloat(e.lng)); });
+  sel.innerHTML=evs.length?evs.map(function(e){ return '<option value="'+e.id+'">'+e.nome+'</option>'; }).join(''):'<option value="">(nenhum evento com coordenadas)</option>';
+}
+async function geoEvento(){
+  var msg=document.getElementById('ev-geo-msg');
+  var local=(document.getElementById('ev-local')||{}).value||'', nome=(document.getElementById('ev-nome')||{}).value||'';
+  if(!local.trim()){ toast('⚠️ Informe o local do evento.'); return; }
+  msg.textContent='Buscando...';
+  try{
+    var p=await _nominatim(_nomEnd(local)); if(!p) p=await _nominatim(_nomEnd(local).split(',')[0]);
+    if(!p){ msg.textContent='Não encontrei. Digite latitude e longitude à mão (clique com o botão direito no Google Maps).'; return; }
+    document.getElementById('ev-lat').value=p.lat.toFixed(5); document.getElementById('ev-lng').value=p.lng.toFixed(5);
+    msg.textContent='Encontrado: '+p.nome.slice(0,140)+'. Confira e salve o evento.';
+  }catch(e){ msg.textContent='Erro: '+e.message+'. Tente de novo ou digite as coordenadas.'; }
+}
+async function geoHotel(){
+  var msg=document.getElementById('h-geo-msg');
+  var end=(document.getElementById('h-end')||{}).value||'', nome=(document.getElementById('h-nome')||{}).value||'';
+  if(!end.trim()&&!nome.trim()){ toast('⚠️ Informe o endereço do hotel.'); return; }
+  msg.textContent='Buscando...';
+  try{
+    var p=null;
+    if(end.trim()) p=await _nominatim(_nomEnd(end));
+    if(!p&&end.trim()){ await new Promise(function(r){setTimeout(r,1100)}); p=await _nominatim(_nomEnd(end).replace(/,[^,]*$/,'')); }
+    if(!p&&nome.trim()){ await new Promise(function(r){setTimeout(r,1100)}); p=await _nominatim(nome+' São Paulo'); }
+    if(!p){ msg.textContent='Não encontrei o endereço. Digite latitude e longitude à mão.'; return; }
+    document.getElementById('h-lat').value=p.lat.toFixed(5); document.getElementById('h-lng').value=p.lng.toFixed(5);
+    var txt='Encontrado: '+p.nome.slice(0,110);
+    var evId=(document.getElementById('h-geo-ev')||{}).value, ev=(S.eventos||[]).find(function(e){ return e.id===evId; });
+    if(ev&&isFinite(parseFloat(ev.lat))){
+      var rt=await _rota(p,{lat:parseFloat(ev.lat),lng:parseFloat(ev.lng)});
+      if(rt){ document.getElementById('h-dist').value=_fmtDist(rt.m); txt+=' | de carro até '+ev.nome+': '+_fmtDist(rt.m)+' (cerca de '+rt.min+' min)'; }
+    } else { txt+=' | Sem evento com coordenadas: distância não calculada.'; }
+    msg.textContent=txt+'. Confira e salve o hotel.';
+  }catch(e){ msg.textContent='Erro: '+e.message+'. Tente de novo ou digite à mão.'; }
+}
+function renderBkMap(ev){
+  var mapEl=document.getElementById('bk-map'), ph=document.getElementById('bk-map-ph'); if(!mapEl||!ph) return;
+  var lat=parseFloat(ev&&ev.lat), lng=parseFloat(ev&&ev.lng);
+  if(window._bkMap){ try{ window._bkMap.remove(); }catch(e){} window._bkMap=null; }
+  if(!window.L||!isFinite(lat)||!isFinite(lng)){ mapEl.style.display='none'; ph.style.display=''; return; }
+  mapEl.style.display='block'; ph.style.display='none';
+  var m=L.map(mapEl,{scrollWheelZoom:false}); window._bkMap=m;
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(m);
+  var pts=[[lat,lng]];
+  var popEv=document.createElement('div'); var b=document.createElement('b'); b.textContent=ev.local||ev.nome; popEv.appendChild(b); popEv.appendChild(document.createElement('br')); popEv.appendChild(document.createTextNode('Local do evento'));
+  L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="font-size:30px;line-height:30px;text-shadow:0 1px 3px rgba(0,0,0,.4)">&#128205;</div>',iconSize:[30,30],iconAnchor:[15,28]}),zIndexOffset:1000}).addTo(m).bindPopup(popEv);
+  (ev.hoteis||[]).forEach(function(eh){
+    var h=getHotel(eh.hid); if(!h) return;
+    var hl=parseFloat(h.lat), hg=parseFloat(h.lng); if(!isFinite(hl)||!isFinite(hg)) return;
+    pts.push([hl,hg]);
+    var pop=document.createElement('div'); var hb=document.createElement('b'); hb.textContent=h.nome; pop.appendChild(hb);
+    if(h.dist){ pop.appendChild(document.createElement('br')); pop.appendChild(document.createTextNode('📍 '+h.dist+' do local do evento')); }
+    L.circleMarker([hl,hg],{radius:9,color:'#fff',weight:2,fillColor:'#2563eb',fillOpacity:1}).addTo(m).bindPopup(pop).bindTooltip(h.nome);
+  });
+  if(pts.length>1) m.fitBounds(pts,{padding:[30,30],maxZoom:16}); else m.setView([lat,lng],15);
+  setTimeout(function(){ try{ m.invalidateSize(); if(pts.length>1) m.fitBounds(pts,{padding:[30,30],maxZoom:16}); }catch(e){} },350);
+}
 function _dadosPublicos(col){
   var v = JSON.parse(JSON.stringify(S[col]));
   if(col==='eventos'){ (v||[]).forEach(function(ev){ (ev.hoteis||[]).forEach(function(eh){ delete eh.financeiro; }); }); }
