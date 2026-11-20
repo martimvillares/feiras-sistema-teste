@@ -605,6 +605,8 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
   .hcard-top{flex-direction:column;align-items:flex-start;gap:6px}
 
   /* Ck-bar — empilhar */
+  .dates-bar-top{grid-template-columns:1fr 1fr}
+  #bk-resumo-quartos{grid-column:1/-1;white-space:normal!important}
   .ck-bar{flex-direction:column;gap:8px;padding:12px 16px}
   .ck-bar > div:last-child{width:100%}
   .ck-bar .btn{width:100%;justify-content:center}
@@ -642,7 +644,7 @@ body{font-family:'Sora',sans-serif;background:var(--g100);color:var(--text);min-
 <!-- ══════════════ MOTOR DE RESERVAS ══════════════ -->
 <div id="v-booking" class="view">
   <div class="bk-public-bar" id="bk-public-bar">
-    Reservas via Feiras &amp; Congressos &bull; <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="12717d7c6673667d5274777b60736177717d7c75607761617d613c717d7f3c7060">[email&#160;protected]</a>
+    Reservas via Feiras &amp; Congressos &bull; <a href="mailto:contato@feirasecongressos.com.br">contato@feirasecongressos.com.br</a>
   </div>
   <header class="bk-header">
     <div class="brand" style="cursor:pointer" onclick="if(S.publicMode){renderEventosLista();showView('v-eventos-lista');}">✈️ <span>Feiras & Congressos</span></div>
@@ -4474,7 +4476,7 @@ function renderBkHotels(){
       var dispTxt = q.disp!==undefined ? (esgotado?'Esgotado':(dispCount<=5?(dispCount===1?'Último quarto':'Últimos '+dispCount+' quartos'):'')) : '';
       var dispColor = esgotado?'var(--red)':dispCount<=3?'var(--orange)':'var(--green)';
       var dispBg = esgotado?'var(--red-l)':dispCount<=3?'var(--orange-l)':'var(--green-l)';
-      var dispBadge = (q.disp!==undefined && dispTxt) ? '<span style="font-size:11px;background:'+dispBg+';color:'+dispColor+';padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px">'+dispTxt+'</span>' : '';
+      var dispBadge = (q.disp!==undefined && dispTxt) ? '<span style="font-size:11px;background:'+dispBg+';color:'+dispColor+';padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px;white-space:nowrap;display:inline-block">'+dispTxt+'</span>' : '';
       var capBadge = q.cap!==undefined ? '<span style="font-size:11px;background:var(--g200);color:var(--g700);padding:2px 8px;border-radius:6px;margin-left:6px;white-space:nowrap">Até '+q.cap+(q.cap===1?' pessoa':' pessoas')+'</span>' : '';
       var pessoasAlert = bkQuartos.filter(function(bq){ return bq.pessoas > (q.cap||99); });
       var capMsg = pessoasAlert.length>0 ? pessoasAlert.map(function(bq){ return 'Quarto '+(bkQuartos.indexOf(bq)+1)+': '+bq.pessoas+'p > limite '+q.cap; }).join(', ') : '';
